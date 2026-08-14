@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PANEL — Roadmap to Avengers: Doomsday</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <a href="index.html" class="brand">PANEL<span class="dot">.</span></a>
+    <div class="navlinks">
+      <a href="tracker.html"
+        onclick="navigateWithTransition('tracker.html'); return false;">
+        TRACKER
+      </a>
+
+      <a href="roadmap.html"
+        onclick="navigateWithTransition('roadmap.html'); return false;">
+        ROADMAP
+      </a>
+    </div>
+    <div class="mini-countdown" id="miniCountdown">Doomsday in ...</div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <section class="roadmap-hero">
+    <h2>The Road to Doomsday</h2>
+    <p>Every saga that feeds into the collision — the direct lead-up, the full Infinity Saga, and the X-Men legacy merging in from the Fox era.</p>
+  </section>
+
+  <section class="spotlight panel">
+    <div>
+      <div class="stamp watching">Spotlight</div>
+      <h3>Avengers: Doomsday</h3>
+      <ul class="fact-list">
+        <li><b>Release:</b> December 18, 2026</li>
+        <li><b>Runtime:</b> ~165 minutes</li>
+        <li><b>Directors:</b> Anthony &amp; Joe Russo</li>
+        <li><b>Premise:</b> Heroes from three distinct universes are pulled onto a collision course against a threat unlike anything they've faced.</li>
+        <li><b>Leads into:</b> Avengers: Secret Wars</li>
+        <li><b>Note:</b> The Hulk sits this one out — Bruce Banner's next appearance is saved for Spider-Man: Brand New Day.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="stamp completed" style="color:#F2EDE1;">Confirmed Cast</div>
+      <div class="cast-list">
+        <span class="cast-chip">Robert Downey Jr. — Doctor Doom</span>
+        <span class="cast-chip">Pedro Pascal — Reed Richards</span>
+        <span class="cast-chip">Vanessa Kirby — Sue Storm</span>
+        <span class="cast-chip">Joseph Quinn — Human Torch</span>
+        <span class="cast-chip">Ebon Moss-Bachrach — The Thing</span>
+        <span class="cast-chip">Anthony Mackie — Captain America</span>
+        <span class="cast-chip">Sebastian Stan — Bucky Barnes</span>
+        <span class="cast-chip">Florence Pugh — Yelena Belova</span>
+        <span class="cast-chip">Letitia Wright — Shuri</span>
+        <span class="cast-chip">Paul Rudd — Ant-Man</span>
+        <span class="cast-chip">Wyatt Russell — US Agent</span>
+        <span class="cast-chip">Tenoch Huerta Mejía — Namor</span>
+        <span class="cast-chip">Simu Liu — Shang-Chi</span>
+        <span class="cast-chip">Chris Hemsworth — Thor</span>
+        <span class="cast-chip">David Harbour — Red Guardian</span>
+        <span class="cast-chip">Hannah John-Kamen — Ghost</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="strip-label">Convergence Map &middot; How the timelines collide</div>
+  <div class="map-hint">Click any stop to add it to your tracker. Scroll sideways to follow the lines. ● movie &nbsp; ◆ series &nbsp; ┄ dashed = optional watch</div>
+  <div class="map-legend">
+    <span><i style="background:var(--track-mcu)"></i>MCU Main Line</span>
+    <span><i style="background:var(--track-raimi)"></i>Raimi Spider-Man</span>
+    <span><i style="background:var(--track-amazing)"></i>Amazing Spider-Man</span>
+    <span><i style="background:var(--track-xmen)"></i>X-Men (Fox Era)</span>
+    <span><i style="background:var(--track-mcu_series)"></i>MCU Series</span>
+    <span><i style="background:var(--track-four)"></i>Fantastic Four (Fox Era)</span>
+    <span><i style="background:var(--track-venom)"></i>Venom Universe (Sony)</span>
+  </div>
+
+  <div class="roadmap-selector panel" aria-label="Timeline selector">
+    <div class="roadmap-selector-head">
+      <div class="roadmap-selector-title">
+        <strong>BUILD YOUR ROADMAP</strong>
+        <span>Select one timeline or combine multiple timelines.</span>
+      </div>
+      <div class="roadmap-selector-actions">
+        <button type="button" class="btn btn-sm btn-ghost" id="roadmapSelectAll">ALL TIMELINES</button>
+        <button type="button" class="btn btn-sm btn-ghost" id="roadmapClearAll">CLEAR</button>
+      </div>
+    </div>
+    <div class="roadmap-timeline-buttons" id="roadmapTimelineButtons"></div>
+    <div class="roadmap-selection-status" id="roadmapSelectionStatus"></div>
+  </div>
+
+  <div class="map-scroll">
+
+      <div class="panel">
+
+        <div class="map-inner" id="mapPanel"></div>
+
+        <div class="comic-scrollbar" id="comicScrollbar">
+          <div class="comic-scrollbar-track">
+            <div
+              class="comic-scrollbar-thumb"
+              id="comicScrollbarThumb">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  <details class="saga panel">
+    <summary>Full Infinity Saga (Phase 1–3)</summary>
+    <div class="saga-list" id="infinitySaga"></div>
+  </details>
+
+</div>
+
+<footer>PANEL — a movies &amp; series ledger. Everything stays in your browser's local storage.</footer>
+
+<script src="script.js"></script>
+<script src="roadmap-data.js"></script>
+<script>
+startMiniCountdown(document.getElementById('miniCountdown'));
+
+/* -------- Convergence map: trunk + branch lines -------- */
+const DX = 128, START_X = 90;
+const trunkX = i => START_X + i * DX;
+
+const TRUNK = ROADMAP_DATA.TRUNK;
+const RAIMI = ROADMAP_DATA.RAIMI;
+const AMAZING = ROADMAP_DATA.AMAZING;
+const XMEN = ROADMAP_DATA.XMEN;
+const DAREDEVIL = ROADMAP_DATA.DAREDEVIL;
+const FANTASTIC_FOUR = ROADMAP_DATA.FANTASTIC_FOUR;
+const VENOM = ROADMAP_DATA.VENOM;
+
+const MERGE_A_IDX = TRUNK.findIndex(x => x.title === 'No Way Home');
+const MERGE_B_IDX = TRUNK.findIndex(x => x.title === 'Deadpool & Wolverine');
+const MERGE_C_IDX = TRUNK.findIndex(x => x.title === 'Daredevil: Born Again');
+const MERGE_D_IDX = TRUNK.findIndex(x => x.title === 'Fantastic Four');
+
+
+const TRUNK_Y = 280, RAIMI_Y = 60, VENOM_Y=220,FANTASTIC_FOUR_Y = 210, AMAZING_Y = 150, XMEN_Y = 420,DAREDEVIL_Y = 440;
+
+function positionTrunk(items){
+  return items.map((it, i) => ({...it, x: trunkX(i), y: TRUNK_Y}));
+}
+function positionBranch(items, mergeX, y){
+  const n = items.length;
+  return items.map((it, i) => ({...it, x: mergeX - (n - 1 - i) * DX, y}));
+}
+
+const trunkPts = positionTrunk(TRUNK);
+const raimiPts = positionBranch(RAIMI, trunkX(MERGE_A_IDX), RAIMI_Y);
+const amazingPts = positionBranch(AMAZING, trunkX(MERGE_A_IDX), AMAZING_Y);
+const xmenPts = positionBranch(XMEN, trunkX(MERGE_B_IDX), XMEN_Y);
+const daredevilPts = positionBranch(DAREDEVIL,trunkX(MERGE_A_IDX),DAREDEVIL_Y);
+const fantasticFourPts = positionBranch(FANTASTIC_FOUR,trunkX(MERGE_B_IDX),FANTASTIC_FOUR_Y);
+const VENOM_START_X = trunkX(MERGE_A_IDX) - 2 * DX;
+
+const venomPts = VENOM.map((item, i) => ({
+  ...item,
+  x: VENOM_START_X + i * 1.5* DX,
+  y: VENOM_Y
+}));
+
+const svgWidth = trunkX(TRUNK.length - 1) + 120;
+const svgHeight = DAREDEVIL_Y + 100;
+
+const PHASE_END_IDX = TRUNK.findIndex(x => x.title === 'Avengers : Endgame'); // last index covered by the Phase 1-3 bracket
+const phaseX1 = trunkX(0), phaseX2 = trunkX(PHASE_END_IDX);
+const phaseY = 358;
+function venomConnection(fromX, fromY, toX, toY){
+  const startY = fromY + 18;
+  const midX = (fromX + toX) / 2;
+
+  return `
+    M ${fromX} ${startY}
+    C ${fromX + 25} ${startY + 35},
+      ${midX - 25} ${toY - 45},
+      ${toX} ${toY}
+  `;
+}
+function linePath(pts){
+  return pts.map((p,i) => `${i===0?'M':'L'} ${p.x} ${p.y}`).join(' ');
+}
+function mergeCurve(fromX, fromY, toY){
+  const midY = (fromY + toY) / 2;
+  return `M ${fromX} ${fromY} C ${fromX} ${midY} ${fromX} ${midY} ${fromX} ${toY}`;
+}
+function nodesSvg(pts, color, labelAbove, stagger){
+  return pts.map((p, i) => {
+    const title = p.title.replace(/'/g, "\\'");
+    const r = p.hero ? 13 : 7;
+    const stag = stagger && (i % 2 === 1);
+    const safeDescription = (p.description || '')
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/\n/g, ' ');
+
+    const safeMustWatch = JSON.stringify(p.mustWatchBefore || [])
+      .replace(/"/g, '&quot;');
+
+    const labelY = p.hero
+    ? p.y + 55
+    : (
+        labelAbove
+          ? p.y - 18
+          : p.y + 34
+      );
+
+    const titleLines = p.lines || [p.title];
+
+    const universeY = labelAbove? labelY - (titleLines.length * 14) - 4: labelY + (titleLines.length * 14) + 4;
+
+    const isSeries = p.type === 'series';
+    const isOptional = !!p.optional;
+    const dash = isOptional ? ' stroke-dasharray="3 2.5"' : '';
+
+    // Label box dimensions
+    const actualBoxWidth = p.hero
+      ? 150
+      : Math.min(
+          116,
+          Math.max(
+            p.title.length * 7.5,
+            p.universe.length * 6.5
+          ) + 16
+        );
+    const boxHeight = p.hero? 70: (titleLines.length > 1 ? 52 : 38);
+    const boxY = p.hero? labelY - 16: Math.min(labelY, universeY) - 13;
+    const marker = p.hero
+        ? ''
+        : (
+            isSeries
+              ? `<rect
+                  x="${p.x-6}"
+                  y="${p.y-6}"
+                  width="12"
+                  height="12"
+                  transform="rotate(45 ${p.x} ${p.y})"
+                  fill="${color}"
+                  stroke="var(--ink)"
+                  stroke-width="2.5"${dash}/>`
+              : `<circle
+                  class="node-circle"
+                  cx="${p.x}"
+                  cy="${p.y}"
+                  r="${r}"
+                  fill="${color}"
+                  stroke="var(--ink)"
+                  stroke-width="3"${dash}/>`
+          );
+
+    return `
+      <g class="map-node"
+        onclick="openRoadmapDetails('${title}', '${p.year}', '${isSeries ? 'series' : 'movie'}', '${p.universe}', ${p.hero ? 'true' : 'false'}, ${isOptional ? 'true' : 'false'},'${safeDescription}',${safeMustWatch})">
+
+        ${p.hero ? `
+            <!-- outer comic burst -->
+            <circle
+              class="doomsday-burst"
+              cx="${p.x}"
+              cy="${p.y}"
+              r="34"
+            />
+
+            <!-- yellow impact ring -->
+            <circle
+              class="doomsday-ring"
+              cx="${p.x}"
+              cy="${p.y}"
+              r="24"
+            />
+
+            <!-- black outer ring -->
+            <circle
+              cx="${p.x}"
+              cy="${p.y}"
+              r="19"
+              fill="var(--ink)"
+            />
+
+            <!-- main node -->
+            <circle
+              class="doomsday-node"
+              cx="${p.x}"
+              cy="${p.y}"
+              r="15"
+              stroke="var(--ink)"
+              stroke-width="3"
+            />
+
+            <!-- highlight -->
+            <circle
+              cx="${p.x - 5}"
+              cy="${p.y - 5}"
+              r="4"
+              fill="var(--cream)"
+              opacity=".7"
+            />
+          ` : ''}
+
+        ${marker}
+
+        <rect
+          class="${p.hero ? 'node-label-bg doomsday-label-bg' : 'node-label-bg'}"
+          x="${p.x - actualBoxWidth / 2}"
+          y="${boxY}"
+          width="${actualBoxWidth}"
+          height="${boxHeight}"
+          rx="5"
+          ry="5"/>
+
+        ${(p.lines || [p.title]).map((line, index) => `
+            <text
+              class="node-title"
+              x="${p.x}"
+              y="${labelY + (labelAbove ? -index * 14 : index * 14)}"
+              text-anchor="middle">${line}</text>
+          `).join('')}
+
+        <text
+          class="node-universe"
+          x="${p.x}"
+          y="${universeY}"
+          text-anchor="middle">${p.universe}</text>
+        ${isOptional ? `
+        <text
+          class="node-optional"
+          x="${p.x}"
+          y="${universeY + 13}"
+          text-anchor="middle">optional</text>
+        ` : ''}
+
+      </g>`;
+  }).join('');
+}
+
+const ROADMAP_LAYERS = {
+  mcu: {
+    label:'MCU Main Line',
+    color:'var(--track-mcu)',
+    points:trunkPts,
+    drawNodes:() => nodesSvg(trunkPts, 'var(--track-mcu)', false, true)
+  },
+  raimi: {
+    label:'Raimi Spider-Man',
+    color:'var(--track-raimi)',
+    points:raimiPts,
+    drawNodes:() => nodesSvg(raimiPts, 'var(--track-raimi)', true, false)
+  },
+  amazing: {
+    label:'Amazing Spider-Man',
+    color:'var(--track-amazing)',
+    points:amazingPts,
+    drawNodes:() => nodesSvg(amazingPts, 'var(--track-amazing)', true, false)
+  },
+  xmen: {
+    label:'X-Men (Fox Era)',
+    color:'var(--track-xmen)',
+    points:xmenPts,
+    drawNodes:() => nodesSvg(xmenPts, 'var(--track-xmen)', false, false)
+  },
+  series: {
+    label:'MCU Series',
+    color:'var(--track-mcu_series)',
+    points:daredevilPts,
+    drawNodes:() => nodesSvg(daredevilPts, 'var(--track-mcu_series)', false, false)
+  },
+  four: {
+    label:'Fantastic Four (Fox Era)',
+    color:'var(--track-four)',
+    points:fantasticFourPts,
+    drawNodes:() => nodesSvg(fantasticFourPts, 'var(--track-four)', true, false)
+  },
+  venom: {
+    label:'Venom Universe (Sony)',
+    color:'var(--track-venom)',
+    points:venomPts,
+    drawNodes:() => nodesSvg(venomPts, 'var(--track-venom)', true, false)
+  }
+};
+
+const roadmapSelection = new Set(Object.keys(ROADMAP_LAYERS));
+
+function roadmapSelected(key){
+  return roadmapSelection.has(key);
+}
+
+function buildRoadmapSvg(){
+  const selectedKeys = Object.keys(ROADMAP_LAYERS).filter(roadmapSelected);
+  const visiblePoints = selectedKeys.flatMap(key => ROADMAP_LAYERS[key].points);
+
+  if(!visiblePoints.length){
+    return `
+      <div class="roadmap-empty">
+        <strong>NO TIMELINE SELECTED</strong>
+        <span>Choose at least one timeline above.</span>
+      </div>
+    `;
+  }
+
+  const minX = Math.min(...visiblePoints.map(p => p.x));
+  const maxX = Math.max(...visiblePoints.map(p => p.x));
+  const minY = Math.min(...visiblePoints.map(p => p.y));
+  const maxY = Math.max(...visiblePoints.map(p => p.y));
+
+  const padX = 90;
+  const padY = 90;
+  const viewMinX = minX - padX;
+  const viewMinY = minY - padY;
+  const viewWidth = Math.max(520, maxX - minX + padX * 2);
+  const viewHeight = Math.max(260, maxY - minY + padY * 2);
+
+  const paths = [];
+  const nodes = [];
+
+  selectedKeys.forEach(key => {
+    const layer = ROADMAP_LAYERS[key];
+
+    paths.push(
+      `<path d="${linePath(layer.points)}" fill="none" stroke="${layer.color}" stroke-width="5"/>`
+    );
+
+    nodes.push(layer.drawNodes());
+  });
+
+  // Convergence lines appear only when MCU Main Line is also selected.
+  if(roadmapSelected('mcu')){
+    if(roadmapSelected('raimi')){
+      paths.push(`<path d="${mergeCurve(trunkX(MERGE_A_IDX), RAIMI_Y, TRUNK_Y)}" fill="none" stroke="var(--track-raimi)" stroke-width="5"/>`);
+    }
+
+    if(roadmapSelected('amazing')){
+      paths.push(`<path d="${mergeCurve(trunkX(MERGE_A_IDX), AMAZING_Y, TRUNK_Y)}" fill="none" stroke="var(--track-amazing)" stroke-width="5"/>`);
+    }
+
+    if(roadmapSelected('xmen')){
+      paths.push(`<path d="${mergeCurve(trunkX(MERGE_B_IDX), XMEN_Y, TRUNK_Y)}" fill="none" stroke="var(--track-xmen)" stroke-width="5"/>`);
+    }
+
+    if(roadmapSelected('series')){
+      paths.push(`<path d="${mergeCurve(trunkX(MERGE_A_IDX), DAREDEVIL_Y, TRUNK_Y)}" fill="none" stroke="var(--track-mcu_series)" stroke-width="5"/>`);
+    }
+
+    if(roadmapSelected('four')){
+      paths.push(`<path d="${mergeCurve(trunkX(MERGE_B_IDX), FANTASTIC_FOUR_Y, TRUNK_Y)}" fill="none" stroke="var(--track-four)" stroke-width="5"/>`);
+    }
+
+    if(roadmapSelected('venom')){
+      paths.push(
+        `<path d="${venomConnection(venomPts[1].x,venomPts[1].y,trunkX(MERGE_A_IDX),TRUNK_Y)}"
+          fill="none" stroke="var(--track-venom)" stroke-width="3" stroke-dasharray="7 6"/>`
+      );
+    }
+  }
+
+  // Infinity Saga bracket belongs only to the MCU Main Line.
+  if(roadmapSelected('mcu')){
+    paths.push(`<line x1="${phaseX1}" y1="${phaseY}" x2="${phaseX2}" y2="${phaseY}" stroke="var(--ink)" stroke-width="2" stroke-dasharray="6 5"/>`);
+    paths.push(`<line x1="${phaseX1}" y1="${phaseY-7}" x2="${phaseX1}" y2="${phaseY+7}" stroke="var(--ink)" stroke-width="2"/>`);
+    paths.push(`<line x1="${phaseX2}" y1="${phaseY-7}" x2="${phaseX2}" y2="${phaseY+7}" stroke="var(--ink)" stroke-width="2"/>`);
+    paths.push(`<text x="${(phaseX1+phaseX2)/2}" y="${phaseY+20}" text-anchor="middle" class="phase-label" fill="var(--ink)">PHASE 1–3 · THE INFINITY SAGA</text>`);
+  }
+
+  return `
+    <svg
+      viewBox="${viewMinX} ${viewMinY} ${viewWidth} ${viewHeight}"
+      width="${viewWidth}"
+      height="${viewHeight}"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="Selected Marvel timeline roadmap"
+    >
+      ${paths.join('')}
+      ${nodes.join('')}
+    </svg>
+  `;
+}
+
+function updateRoadmapSelectionUI(){
+  document.querySelectorAll('.roadmap-timeline-btn').forEach(btn => {
+    const active = roadmapSelected(btn.dataset.timeline);
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  });
+
+  const selected = Object.keys(ROADMAP_LAYERS)
+    .filter(roadmapSelected)
+    .map(key => ROADMAP_LAYERS[key].label);
+
+  const status = document.getElementById('roadmapSelectionStatus');
+
+  if(!selected.length){
+    status.textContent = 'No timeline selected';
+  } else if(selected.length === Object.keys(ROADMAP_LAYERS).length){
+    status.textContent = 'Showing all timelines';
+  } else {
+    status.textContent =
+      `Showing ${selected.length} timeline${selected.length === 1 ? '' : 's'}: ${selected.join(' + ')}`;
+  }
+}
+
+function renderRoadmap(){
+  const mapPanel = document.getElementById('mapPanel');
+  mapPanel.innerHTML = buildRoadmapSvg();
+  updateRoadmapSelectionUI();
+
+  requestAnimationFrame(updateMapScrollTrail);
+}
+
+const roadmapButtonContainer = document.getElementById('roadmapTimelineButtons');
+
+roadmapButtonContainer.innerHTML = Object.entries(ROADMAP_LAYERS).map(([key, layer]) => `
+  <button
+    type="button"
+    class="roadmap-timeline-btn"
+    data-timeline="${key}"
+    aria-pressed="true"
+  >
+    <i style="background:${layer.color}"></i>
+    <span>${layer.label}</span>
+  </button>
+`).join('');
+
+roadmapButtonContainer.addEventListener('click', event => {
+  const button = event.target.closest('.roadmap-timeline-btn');
+  if(!button) return;
+
+  const key = button.dataset.timeline;
+
+  if(roadmapSelection.has(key)){
+    roadmapSelection.delete(key);
+  } else {
+    roadmapSelection.add(key);
+  }
+
+  renderRoadmap();
+});
+
+document.getElementById('roadmapSelectAll').addEventListener('click', () => {
+  Object.keys(ROADMAP_LAYERS).forEach(key => roadmapSelection.add(key));
+  renderRoadmap();
+});
+
+document.getElementById('roadmapClearAll').addEventListener('click', () => {
+  roadmapSelection.clear();
+  renderRoadmap();
+});
+
+
+/* =====================================================
+   CUSTOM COMIC BOOK SCROLLBAR
+   ===================================================== */
+
+const mapPanel =
+  document.getElementById('mapPanel');
+
+const comicScrollbar =
+  document.getElementById('comicScrollbar');
+
+const comicScrollbarThumb =
+  document.getElementById('comicScrollbarThumb');
+
+let scrollbarDragging = false;
+let dragStartX = 0;
+let dragStartScroll = 0;
+
+
+/* ---------- update scrollbar ---------- */
+
+function updateComicScrollbar(){
+
+  if(!mapPanel || !comicScrollbar || !comicScrollbarThumb){
+    return;
+  }
+
+  const visibleWidth =
+    mapPanel.clientWidth;
+
+  const contentWidth =
+    mapPanel.scrollWidth;
+
+
+  /* Nothing to scroll */
+
+  if(contentWidth <= visibleWidth){
+
+    comicScrollbar.style.display = 'none';
+
+    return;
+  }
+
+
+  comicScrollbar.style.display = 'block';
+
+
+  const trackWidth =
+    comicScrollbar.clientWidth;
+
+
+  const thumbWidth =
+    Math.max(
+      55,
+      (visibleWidth / contentWidth) * trackWidth
+    );
+
+
+  const maxThumbTravel =
+    trackWidth - thumbWidth;
+
+
+  const maxScroll =
+    contentWidth - visibleWidth;
+
+
+  const progress =
+    maxScroll > 0
+      ? mapPanel.scrollLeft / maxScroll
+      : 0;
+
+
+  comicScrollbarThumb.style.width =
+    `${thumbWidth}px`;
+
+
+  comicScrollbarThumb.style.transform =
+    `translateX(${progress * maxThumbTravel}px)`;
+}
+
+
+/* ---------- update when roadmap scrolls ---------- */
+
+mapPanel.addEventListener(
+  'scroll',
+  updateComicScrollbar
+);
+
+
+/* ---------- resize ---------- */
+
+window.addEventListener(
+  'resize',
+  updateComicScrollbar
+);
+
+
+/* ---------- click scrollbar track ---------- */
+
+comicScrollbar.addEventListener(
+  'pointerdown',
+  function(e){
+
+    /* If clicking the thumb, let the drag handler handle it */
+    if(e.target === comicScrollbarThumb){
+      return;
+    }
+
+
+    const rect =
+      comicScrollbar.getBoundingClientRect();
+
+
+    const clickX =
+      e.clientX - rect.left;
+
+
+    const thumbWidth =
+      comicScrollbarThumb.offsetWidth;
+
+
+    const trackWidth =
+      comicScrollbar.clientWidth;
+
+
+    const maxThumbTravel =
+      trackWidth - thumbWidth;
+
+
+    if(maxThumbTravel <= 0){
+      return;
+    }
+
+
+    const percentage =
+      Math.max(
+        0,
+        Math.min(
+          1,
+          (clickX - thumbWidth / 2) /
+          maxThumbTravel
+        )
+      );
+
+
+    const maxScroll =
+      mapPanel.scrollWidth -
+      mapPanel.clientWidth;
+
+
+    mapPanel.scrollLeft =
+      percentage * maxScroll;
+  }
+);
+
+
+/* ---------- start dragging ---------- */
+
+comicScrollbarThumb.addEventListener(
+  'pointerdown',
+  function(e){
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    scrollbarDragging = true;
+
+    dragStartX =
+      e.clientX;
+
+    dragStartScroll =
+      mapPanel.scrollLeft;
+
+    comicScrollbarThumb.classList.add(
+      'dragging'
+    );
+
+    comicScrollbarThumb.setPointerCapture(
+      e.pointerId
+    );
+  }
+);
+
+
+/* ---------- dragging ---------- */
+
+comicScrollbarThumb.addEventListener(
+  'pointermove',
+  function(e){
+
+    if(!scrollbarDragging){
+      return;
+    }
+
+
+    const deltaX =
+      e.clientX - dragStartX;
+
+
+    const trackWidth =
+      comicScrollbar.clientWidth;
+
+
+    const thumbWidth =
+      comicScrollbarThumb.offsetWidth;
+
+
+    const maxThumbTravel =
+      trackWidth - thumbWidth;
+
+
+    const maxScroll =
+      mapPanel.scrollWidth -
+      mapPanel.clientWidth;
+
+
+    if(maxThumbTravel <= 0){
+      return;
+    }
+
+
+    const scrollDelta =
+      (deltaX / maxThumbTravel) *
+      maxScroll;
+
+
+    mapPanel.scrollLeft =
+      dragStartScroll + scrollDelta;
+
+  }
+);
+
+
+/* ---------- stop dragging ---------- */
+
+function stopComicScrollbarDrag(){
+
+  if(!scrollbarDragging){
+    return;
+  }
+
+  scrollbarDragging = false;
+
+  comicScrollbarThumb.classList.remove(
+    'dragging'
+  );
+}
+
+
+comicScrollbarThumb.addEventListener(
+  'pointerup',
+  stopComicScrollbarDrag
+);
+
+comicScrollbarThumb.addEventListener(
+  'pointercancel',
+  stopComicScrollbarDrag
+);
+
+
+/* ---------- mouse wheel ---------- */
+
+mapPanel.addEventListener(
+  'wheel',
+  function(e){
+
+    if(
+      Math.abs(e.deltaY) >
+      Math.abs(e.deltaX)
+    ){
+
+      mapPanel.scrollLeft += e.deltaY;
+
+      e.preventDefault();
+    }
+
+  },
+  { passive: false }
+);
+
+
+/* ---------- initial render ---------- */
+
+requestAnimationFrame(
+  updateComicScrollbar
+);
+
+setTimeout(
+  updateComicScrollbar,
+  200
+);
+
+setTimeout(
+  updateComicScrollbar,
+  600
+);
+
+/* ---------- FINAL ROADMAP RENDER ---------- */
+
+renderRoadmap();
+
+requestAnimationFrame(() => {
+  updateComicScrollbar();
+});
+
+setTimeout(updateComicScrollbar, 100);
+setTimeout(updateComicScrollbar, 500);
+
+/* -------- Track A: Infinity Saga -------- */
+
+const trackA = ROADMAP_DATA.TRACK_A;
+
+document.getElementById('infinitySaga').innerHTML = trackA
+  .map((item, index) => {
+
+    const safeTitle =
+      (item.title || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'");
+
+    const safeUniverse =
+      (item.universe || 'Earth-616')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'");
+
+    const safeDescription =
+      (item.description || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\n/g, ' ');
+
+    const safeMustWatch =
+      JSON.stringify(item.mustWatchBefore || [])
+        .replace(/"/g, '&quot;');
+
+    return `
+      <div
+        class="saga-item ${item.major ? 'major' : ''}"
+        onclick="openRoadmapDetails(
+          '${safeTitle}',
+          '${item.year || ''}',
+          '${item.type || 'movie'}',
+          '${safeUniverse}',
+          false,
+          ${item.optional ? 'true' : 'false'},
+          '${safeDescription}',
+          ${safeMustWatch}
+        )"
+        title="Click to view ${safeTitle}"
+      >
+
+        <div class="saga-number">
+          ${String(index + 1).padStart(2,'0')}
+        </div>
+
+        <div class="saga-phase">
+          PHASE ${item.phase || ''}
+        </div>
+
+        <div class="saga-title">
+          ${item.title}
+        </div>
+
+        <div class="saga-year">
+          ${item.year || ''}
+        </div>
+
+      </div>
+    `;
+  })
+  .join('<div class="saga-arrow">→</div>');
+  document.body.classList.add('page-transition-in');
+
+  setTimeout(() => {
+    document.body.classList.remove('page-transition-in');
+  }, 350);
+</script>
+<div class="roadmap-modal" id="roadmapModal">
+  <div class="roadmap-modal-backdrop" onclick="closeRoadmapDetails()"></div>
+
+  <div class="roadmap-detail-card">
+
+    <button
+      class="roadmap-modal-close"
+      onclick="closeRoadmapDetails()"
+      aria-label="Close"
+    >×</button>
+
+    <div class="roadmap-detail-kicker" id="roadmapDetailType">
+      MOVIE
+    </div>
+
+    <h3 id="roadmapDetailTitle">Movie Title</h3>
+
+    <div class="roadmap-detail-meta">
+      <span id="roadmapDetailYear">2024</span>
+      <span>•</span>
+      <span id="roadmapDetailUniverse">Earth-616</span>
+    </div>
+
+    <div class="roadmap-detail-divider"></div>
+
+<!-- SPOILER WARNING -->
+<div class="spoiler-warning" id="spoilerWarning">
+
+  <div class="spoiler-warning-icon">⚠</div>
+
+  <div class="spoiler-warning-title">
+    SPOILER WARNING
+  </div>
+
+  <p>
+    The following information may contain spoilers
+    for this movie or series.
+  </p>
+
+  <button
+    type="button"
+    class="spoiler-reveal-btn"
+    onclick="revealSpoilers()"
+  >
+    REVEAL DETAILS
+  </button>
+
+</div>
+
+<!-- HIDDEN DETAILS -->
+<div class="spoiler-content" id="spoilerContent">
+
+  <p id="roadmapDetailDescription">
+    Movie details will appear here.
+  </p>
+
+  <div
+    class="must-watch-before"
+    id="mustWatchBeforeSection"
+    style="display:none;"
+  >
+    <div class="must-watch-before-title">
+      MUST WATCH BEFORE
+    </div>
+
+    <div
+      class="must-watch-before-list"
+      id="mustWatchBeforeList"
+    ></div>
+  </div>
+
+</div>
+
+    <button
+      class="btn btn-red roadmap-add-btn"
+      id="roadmapAddBtn"
+    >
+      + ADD TO TRACKER
+    </button>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PANEL — Your Tracker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <a href="index.html" class="brand">PANEL<span class="dot">.</span></a>
+    <div class="navlinks">
+      <a href="tracker.html"
+          onclick="navigateWithTransition('tracker.html'); return false;">
+          TRACKER
+        </a>
+
+        <a href="roadmap.html"
+          onclick="navigateWithTransition('roadmap.html'); return false;">
+          ROADMAP
+        </a>
+    </div>
+    <div class="mini-countdown" id="miniCountdown">Doomsday in ...</div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <section class="hero-strip">
+    <h2>Your Watch Ledger</h2>
+    <p>Every title you're tracking, stored right in this browser — no account, no server.</p>
+
+    <div class="mode-toggle" role="group" aria-label="Tracking mode">
+      <button id="modeMovies" type="button">Movies Only</button>
+      <button id="modeBoth" type="button">Movies + Series</button>
+    </div>
+  </section>
+
+  <section class="stats-row" id="statsRow"></section>
+
+  <section class="toolbar">
+    <div class="filters" id="filterButtons">
+      <button data-filter="all" class="active">All</button>
+      <button data-filter="want">Want to Watch</button>
+      <button data-filter="watching">Watching</button>
+      <button data-filter="completed">Completed</button>
+      <button data-filter="dropped">Dropped</button>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <input type="text" class="search-box" id="searchBox" placeholder="Search your list...">
+      <button class="btn" id="toggleFormBtn" type="button">+ New Entry</button>
+    </div>
+  </section>
+
+  <section class="entry-form panel" id="entryForm">
+    <h3>Add a title</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label for="f-title">Title</label>
+        <input type="text" id="f-title" placeholder="e.g. Avengers: Doomsday">
+      </div>
+      <div class="field" id="typeField">
+        <label for="f-type">Type</label>
+        <select id="f-type">
+          <option value="movie">Movie</option>
+          <option value="series">Series</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-genre">Genre</label>
+        <input type="text" id="f-genre" placeholder="e.g. Sci-Fi, Drama">
+      </div>
+      <div class="field">
+        <label for="f-status">Status</label>
+        <select id="f-status">
+          <option value="want">Want to Watch</option>
+          <option value="watching">Watching</option>
+          <option value="completed">Completed</option>
+          <option value="dropped">Dropped</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-poster">Poster URL (optional)</label>
+        <input type="text" id="f-poster" placeholder="https://...">
+      </div>
+      <div class="field series-only" id="seasonField">
+        <label for="f-season">Season</label>
+        <input type="number" id="f-season" min="0" placeholder="2">
+      </div>
+      <div class="field series-only" id="episodeField">
+        <label for="f-episode">Episode</label>
+        <input type="number" id="f-episode" min="0" placeholder="4">
+      </div>
+      <div class="field completed-only" id="ratingField">
+        <label for="f-rating">Rating (1–5)</label>
+        <select id="f-rating">
+          <option value="0">—</option>
+          <option value="1">★</option>
+          <option value="2">★★</option>
+          <option value="3">★★★</option>
+          <option value="4">★★★★</option>
+          <option value="5">★★★★★</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label for="f-notes">Notes (optional)</label>
+        <textarea id="f-notes" rows="2" placeholder="Anything you want to remember..."></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" id="saveEntryBtn" type="button">Save Entry</button>
+      <button class="btn btn-ghost" id="cancelEntryBtn" type="button">Cancel</button>
+    </div>
+  </section>
+
+  <section class="grid" id="cardGrid"></section>
+
+</div>
+
+<footer>PANEL — a movies &amp; series ledger. Everything stays in your browser's local storage.</footer>
+
+<script src="script.js"></script>
+<script>
+/* ---------------- state ---------------- */
+let currentFilter = 'all';
+let currentSearch = '';
+let editingId = null;
+
+const modeMoviesBtn = document.getElementById('modeMovies');
+const modeBothBtn = document.getElementById('modeBoth');
+const typeField = document.getElementById('typeField');
+const fType = document.getElementById('f-type');
+const seasonField = document.getElementById('seasonField');
+const episodeField = document.getElementById('episodeField');
+const ratingField = document.getElementById('ratingField');
+const fStatus = document.getElementById('f-status');
+const entryForm = document.getElementById('entryForm');
+
+/* ---------------- mode toggle ---------------- */
+function applyMode(){
+  const mode = getMode();
+  modeMoviesBtn.classList.toggle('active', mode === 'movies');
+  modeBothBtn.classList.toggle('active', mode === 'both');
+  typeField.style.display = (mode === 'movies') ? 'none' : 'flex';
+  if(mode === 'movies'){ fType.value = 'movie'; }
+  renderAll();
+}
+modeMoviesBtn.addEventListener('click', () => { setMode('movies'); applyMode(); });
+modeBothBtn.addEventListener('click', () => { setMode('both'); applyMode(); });
+
+/* ---------------- form show/hide dynamic fields ---------------- */
+function refreshFormVisibility(){
+  const isSeries = fType.value === 'series' && getMode() === 'both';
+  seasonField.style.display = isSeries ? 'flex' : 'none';
+  episodeField.style.display = isSeries ? 'flex' : 'none';
+  const isCompleted = fStatus.value === 'completed';
+  ratingField.style.display = isCompleted ? 'flex' : 'none';
+}
+fType.addEventListener('change', refreshFormVisibility);
+fStatus.addEventListener('change', refreshFormVisibility);
+
+document.getElementById('toggleFormBtn').addEventListener('click', () => {
+  editingId = null;
+  clearForm();
+  entryForm.classList.add('open');
+  refreshFormVisibility();
+  document.getElementById('f-title').focus();
+});
+document.getElementById('cancelEntryBtn').addEventListener('click', () => {
+  entryForm.classList.remove('open');
+});
+
+function clearForm(){
+  document.getElementById('f-title').value = '';
+  fType.value = 'movie';
+  document.getElementById('f-genre').value = '';
+  fStatus.value = 'want';
+  document.getElementById('f-poster').value = '';
+  document.getElementById('f-season').value = '';
+  document.getElementById('f-episode').value = '';
+  document.getElementById('f-rating').value = '0';
+  document.getElementById('f-notes').value = '';
+}
+
+document.getElementById('saveEntryBtn').addEventListener('click', () => {
+  const title = document.getElementById('f-title').value.trim();
+  if(!title){ showToast('Give it a title first'); return; }
+
+  const item = {
+    title,
+    type: getMode() === 'movies' ? 'movie' : fType.value,
+    genre: document.getElementById('f-genre').value.trim() || 'Uncategorized',
+    status: fStatus.value,
+    poster: document.getElementById('f-poster').value.trim(),
+    season: document.getElementById('f-season').value,
+    episode: document.getElementById('f-episode').value,
+    rating: Number(document.getElementById('f-rating').value) || 0,
+    notes: document.getElementById('f-notes').value.trim(),
+  };
+
+  if(editingId){
+    updateItem(editingId, item);
+    showToast('Entry updated');
+  }else{
+    addItem(item);
+    showToast('Entry added');
+  }
+  editingId = null;
+  entryForm.classList.remove('open');
+  clearForm();
+  renderAll();
+});
+
+/* ---------------- filters + search ---------------- */
+document.getElementById('filterButtons').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-filter]');
+  if(!btn) return;
+  currentFilter = btn.dataset.filter;
+  document.querySelectorAll('#filterButtons button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid();
+});
+
+document.getElementById('searchBox').addEventListener('input', (e) => {
+  currentSearch = e.target.value.toLowerCase();
+  renderGrid();
+});
+
+/* ---------------- rendering ---------------- */
+const STATUS_LABEL = {want:'Want to Watch', watching:'Watching', completed:'Completed', dropped:'Dropped'};
+
+function renderStats(){
+  const items = loadItems().filter(visibleByMode);
+  const counts = {want:0, watching:0, completed:0, dropped:0};
+  items.forEach(i => { if(counts[i.status] !== undefined) counts[i.status]++; });
+  const statsRow = document.getElementById('statsRow');
+  statsRow.innerHTML = `
+    <div class="panel stat-box"><div class="n">${items.length}</div><div class="l">Total</div></div>
+    <div class="panel stat-box"><div class="n">${counts.want}</div><div class="l">Want to Watch</div></div>
+    <div class="panel stat-box"><div class="n">${counts.watching}</div><div class="l">Watching</div></div>
+    <div class="panel stat-box"><div class="n">${counts.completed}</div><div class="l">Completed</div></div>
+    <div class="panel stat-box"><div class="n">${counts.dropped}</div><div class="l">Dropped</div></div>
+  `;
+}
+
+function visibleByMode(item){
+  return getMode() === 'movies' ? item.type === 'movie' : true;
+}
+
+function esc(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+function renderGrid(){
+  const grid = document.getElementById('cardGrid');
+  let items = loadItems().filter(visibleByMode);
+
+  if(currentFilter !== 'all'){
+    items = items.filter(i => i.status === currentFilter);
+  }
+  if(currentSearch){
+    items = items.filter(i => i.title.toLowerCase().includes(currentSearch));
+  }
+
+  if(items.length === 0){
+    grid.innerHTML = `
+      <div class="empty-state panel" style="grid-column:1/-1;">
+        <div class="stamp want">Blank Page</div>
+        <p>Nothing here yet. Hit "+ New Entry" to start your ledger,<br>or grab titles from the <a href="roadmap.html" style="text-decoration:underline;">roadmap</a>.</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = items.map((item, idx) => {
+    const tilt = idx % 2 === 0 ? 'tilt-l' : 'tilt-r';
+    const stars = item.rating > 0 ? '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating) : '';
+    const progress = (item.type === 'series' && (item.season || item.episode))
+      ? `<div class="progress">S${item.season || '–'} · E${item.episode || '–'}</div>` : '';
+    return `
+      <div class="card panel ${tilt}">
+        <div class="type-tag">${item.type === 'series' ? 'Series' : 'Movie'} &middot; ${esc(item.genre)}${item.year ? ` &middot; ${esc(item.year)}` : ''}</div>
+        <h4>${esc(item.title)}</h4>
+        ${progress}
+        ${stars ? `<div class="stars">${stars}</div>` : ''}
+        ${item.notes ? `<div class="notes">${esc(item.notes)}</div>` : ''}
+        <div class="card-foot">
+          <span class="stamp ${item.status}">${STATUS_LABEL[item.status]}</span>
+          <div class="card-actions">
+            <button class="btn btn-sm" data-edit="${item.id}" type="button">Edit</button>
+            <button class="btn btn-sm btn-red" data-del="${item.id}" type="button">Del</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('cardGrid').addEventListener('click', (e) => {
+  const editBtn = e.target.closest('button[data-edit]');
+  const delBtn = e.target.closest('button[data-del]');
+  if(editBtn){
+    const id = editBtn.dataset.edit;
+    const item = loadItems().find(i => i.id === id);
+    if(!item) return;
+    editingId = id;
+    document.getElementById('f-title').value = item.title;
+    fType.value = item.type;
+    document.getElementById('f-genre').value = item.genre;
+    fStatus.value = item.status;
+    document.getElementById('f-poster').value = item.poster || '';
+    document.getElementById('f-season').value = item.season || '';
+    document.getElementById('f-episode').value = item.episode || '';
+    document.getElementById('f-rating').value = item.rating || 0;
+    document.getElementById('f-notes').value = item.notes || '';
+    refreshFormVisibility();
+    entryForm.classList.add('open');
+    document.getElementById('f-title').focus();
+  }
+  if(delBtn){
+    if(confirm('Remove this entry?')){
+      deleteItem(delBtn.dataset.del);
+      renderAll();
+      showToast('Entry removed');
+    }
+  }
+});
+
+function renderAll(){
+  renderStats();
+  renderGrid();
+}
+
+startMiniCountdown(document.getElementById('miniCountdown'));
+applyMode();
+renderAll();
+document.body.classList.add('page-transition-in');
+
+  setTimeout(() => {
+    document.body.classList.remove('page-transition-in');
+  }, 350);
+</script>
+</body>
+</html>

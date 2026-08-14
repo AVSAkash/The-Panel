@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PANEL — Countdown to Avengers: Doomsday</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a href="tracker.html" class="skip">Skip →</a>
+
+<main class="splash" id="splash">
+  <div class="splash-eyebrow">Issue #1 &middot; Multiverse Saga Finale Countdown</div>
+
+  <h1>THE COLLISION<span>IS COMING</span></h1>
+
+  <div class="countdown" aria-live="polite">
+    <div class="block">
+      <div class="num" id="cd-days">000</div>
+      <div class="label">Days</div>
+    </div>
+    <div class="block">
+      <div class="num" id="cd-hours">00</div>
+      <div class="label">Hours</div>
+    </div>
+    <div class="block">
+      <div class="num" id="cd-mins">00</div>
+      <div class="label">Minutes</div>
+    </div>
+    <div class="block">
+      <div class="num" id="cd-secs">00</div>
+      <div class="label">Seconds</div>
+    </div>
+  </div>
+
+  <div class="enter-prompt">
+    <button class="key" id="enterBtn" type="button">PRESS SPACE TO ENTER</button>
+    <div class="enter-sub">or click the panel above &middot; Avengers: Doomsday hits theaters Dec 18, 2026</div>
+  </div>
+</main>
+
+<div class="glitch-overlay" id="glitchOverlay"></div>
+<div class="glitch-blackout" id="glitchBlackout"></div>
+
+<script src="script.js"></script>
+<script>
+
+  /* =====================================================
+     CLOCK SOUND
+     ===================================================== */
+
+  let clockAudioCtx = null;
+  let clockSoundReady = false;
+  let siteEntered = false;
+  let tickCount = 0;
+
+
+  function initClockSound(){
+
+    if(!clockAudioCtx){
+
+      clockAudioCtx =
+        new (window.AudioContext || window.webkitAudioContext)();
+
+    }
+
+    if(clockAudioCtx.state === 'suspended'){
+      clockAudioCtx.resume();
+    }
+
+    clockSoundReady = true;
+  }
+
+
+function playClockTick(){
+
+  if(!clockSoundReady || !clockAudioCtx) return;
+
+  const ctx = clockAudioCtx;
+  const now = ctx.currentTime;
+
+  tickCount++;
+
+  /* Real escapement clocks alternate tick/tock at slightly
+     different pitches, and no two ticks sound perfectly
+     identical — a little randomness sells the illusion. */
+  const isTock = tickCount % 2 === 0;
+  const jitter = 1 + (Math.random() * 0.06 - 0.03);
+  const pitchMul = (isTock ? 0.82 : 1.0) * jitter;
+
+
+  /* =====================================================
+     PRIMARY IMPACT — sharp, tight click
+     ===================================================== */
+
+  const bufferSize = Math.floor(ctx.sampleRate * 0.02);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for(let i = 0; i < bufferSize; i++){
+    const t = i / bufferSize;
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 9);
+  }
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+
+  const bandpass = ctx.createBiquadFilter();
+  bandpass.type = 'bandpass';
+  bandpass.frequency.setValueAtTime(2600 * pitchMul, now);
+  bandpass.Q.setValueAtTime(7, now);
+
+  const highpass = ctx.createBiquadFilter();
+  highpass.type = 'highpass';
+  highpass.frequency.setValueAtTime(900, now);
+
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.0001, now);
+  noiseGain.gain.exponentialRampToValueAtTime(0.5, now + 0.0008);
+  noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.016);
+
+  noise.connect(bandpass);
+  bandpass.connect(highpass);
+  highpass.connect(noiseGain);
+  noiseGain.connect(ctx.destination);
+
+  noise.start(now);
+  noise.stop(now + 0.02);
+
+
+  /* =====================================================
+     RELEASE CLICK — the escapement letting go, a beat later
+     ===================================================== */
+
+  const releaseDelay = 0.012 + Math.random() * 0.004;
+  const relSize = Math.floor(ctx.sampleRate * 0.012);
+  const relBuffer = ctx.createBuffer(1, relSize, ctx.sampleRate);
+  const relData = relBuffer.getChannelData(0);
+
+  for(let i = 0; i < relSize; i++){
+    const t = i / relSize;
+    relData[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 10);
+  }
+
+  const relNoise = ctx.createBufferSource();
+  relNoise.buffer = relBuffer;
+
+  const relFilter = ctx.createBiquadFilter();
+  relFilter.type = 'bandpass';
+  relFilter.frequency.setValueAtTime(3800 * pitchMul, now + releaseDelay);
+  relFilter.Q.setValueAtTime(9, now + releaseDelay);
+
+  const relGain = ctx.createGain();
+  relGain.gain.setValueAtTime(0.0001, now + releaseDelay);
+  relGain.gain.exponentialRampToValueAtTime(0.18, now + releaseDelay + 0.0006);
+  relGain.gain.exponentialRampToValueAtTime(0.0001, now + releaseDelay + 0.01);
+
+  relNoise.connect(relFilter);
+  relFilter.connect(relGain);
+  relGain.connect(ctx.destination);
+
+  relNoise.start(now + releaseDelay);
+  relNoise.stop(now + releaseDelay + 0.012);
+
+
+  /* =====================================================
+     METAL / GEAR RESONANCE
+     ===================================================== */
+
+  const metal = ctx.createOscillator();
+  const metalGain = ctx.createGain();
+
+  metal.type = 'triangle';
+  metal.frequency.setValueAtTime(560 * pitchMul, now);
+  metal.frequency.exponentialRampToValueAtTime(150 * pitchMul, now + 0.05);
+
+  metalGain.gain.setValueAtTime(0.0001, now);
+  metalGain.gain.exponentialRampToValueAtTime(isTock ? 0.2 : 0.14, now + 0.001);
+  metalGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+
+  metal.connect(metalGain);
+  metalGain.connect(ctx.destination);
+
+  metal.start(now);
+  metal.stop(now + 0.065);
+
+
+  /* =====================================================
+     CASE RESONANCE — a little low-end warmth/body
+     ===================================================== */
+
+  const body = ctx.createOscillator();
+  const bodyGain = ctx.createGain();
+
+  body.type = 'sine';
+  body.frequency.setValueAtTime(180 * pitchMul, now);
+
+  bodyGain.gain.setValueAtTime(0.0001, now);
+  bodyGain.gain.exponentialRampToValueAtTime(0.06, now + 0.002);
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+
+  body.connect(bodyGain);
+  bodyGain.connect(ctx.destination);
+
+  body.start(now);
+  body.stop(now + 0.1);
+}
+
+  /* =====================================================
+     SPLASH COUNTDOWN
+     ===================================================== */
+
+  const countdownElements = {
+
+    days: document.getElementById('cd-days'),
+
+    hours: document.getElementById('cd-hours'),
+
+    mins: document.getElementById('cd-mins'),
+
+    secs: document.getElementById('cd-secs')
+
+  };
+
+
+  function updateSplashCountdown(){
+
+    const p = getCountdownParts();
+
+    countdownElements.days.textContent =
+      String(p.days).padStart(3,'0');
+
+    countdownElements.hours.textContent =
+      String(p.hours).padStart(2,'0');
+
+    countdownElements.mins.textContent =
+      String(p.mins).padStart(2,'0');
+
+    countdownElements.secs.textContent =
+      String(p.secs).padStart(2,'0');
+  }
+
+
+  /*
+    THE CLOCK ALWAYS RUNS.
+
+    The visual countdown starts immediately.
+    The sound attempts to tick every second.
+
+    If the browser blocks autoplay,
+    the first Space/click unlocks the sound.
+  */
+
+  updateSplashCountdown();
+
+  setInterval(() => {
+
+    updateSplashCountdown();
+
+    playClockTick();
+
+  }, 1000);
+
+
+  /* =====================================================
+     TWO-STEP ENTER SYSTEM
+     ===================================================== */
+
+  const enterBtn =
+    document.getElementById('enterBtn');
+
+  const enterSub =
+    document.querySelector('.enter-sub');
+
+
+  /*
+    FIRST SPACE / CLICK
+
+    Unlock audio.
+    Do NOT leave the page.
+  */
+
+  function firstInteraction(){
+
+    if(clockSoundReady) return;
+
+    initClockSound();
+
+    // Immediate audible tick after unlocking
+    playClockTick();
+
+
+    enterBtn.textContent =
+      'CLOCK ACTIVE — PRESS SPACE AGAIN';
+
+    enterSub.textContent =
+      'The countdown is running · press SPACE again to enter';
+
+
+    document
+      .getElementById('splash')
+      .classList.add('clock-active');
+  }
+
+
+  /*
+    SECOND SPACE / CLICK
+
+    Leave splash and enter tracker.
+  */
+
+  function enterSite(){
+
+    if(siteEntered) return;
+
+    siteEntered = true;
+
+    const splash = document.getElementById('splash');
+    const overlay = document.getElementById('glitchOverlay');
+    const blackout = document.getElementById('glitchBlackout');
+
+    const reduceMotion =
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if(reduceMotion){
+      splash.style.transition = 'opacity .3s ease';
+      splash.style.opacity = '0';
+      setTimeout(() => { window.location.href = 'tracker.html'; }, 300);
+      return;
+    }
+
+    splash.classList.add('glitching');
+    overlay.classList.add('active');
+
+    setTimeout(() => {
+      blackout.classList.add('active');
+    }, 380);
+
+    setTimeout(() => {
+      window.location.href = 'tracker.html';
+    }, 520);
+  }
+
+
+  /*
+    Decide what Space / Click means.
+  */
+
+  function handleEnter(){
+
+    // First interaction = start/unlock clock
+    if(!clockSoundReady){
+
+      firstInteraction();
+
+      return;
+    }
+
+
+    // Second interaction = enter tracker
+    enterSite();
+  }
+
+
+  /* =====================================================
+     BUTTON
+     ===================================================== */
+
+  enterBtn.addEventListener(
+    'click',
+    handleEnter
+  );
+
+
+  /* =====================================================
+     SPACE KEY
+     ===================================================== */
+
+  document.addEventListener(
+    'keydown',
+    function(e){
+
+      if(e.code !== 'Space') return;
+
+      e.preventDefault();
+
+      handleEnter();
+
+    }
+  );
+
+</script>
+</body>
+</html>
