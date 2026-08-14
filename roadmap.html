@@ -822,25 +822,6 @@ comicScrollbarThumb.addEventListener(
 );
 
 
-/* ---------- mouse wheel ---------- */
-
-mapPanel.addEventListener(
-  'wheel',
-  function(e){
-
-    if(
-      Math.abs(e.deltaY) >
-      Math.abs(e.deltaX)
-    ){
-
-      mapPanel.scrollLeft += e.deltaY;
-
-      e.preventDefault();
-    }
-
-  },
-  { passive: false }
-);
 
 
 /* ---------- initial render ---------- */
