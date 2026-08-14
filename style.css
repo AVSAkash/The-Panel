@@ -1731,6 +1731,11 @@ footer{
   text-shadow:
     3px 3px 0 var(--doom-green);
 }
+.hero-modal .must-watch-before-title{
+  border-top-color: var(--cream);
+  color:var(--cream);
+  font-weight: 400;
+}
 
 .hero-modal .roadmap-detail-kicker{
   background:var(--red);
