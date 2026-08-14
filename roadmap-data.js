@@ -774,7 +774,11 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Captain America : Brave New World',
+      title: 'Captain America: Brave New World',
+       lines: [
+        'Captain America:',
+        'Brave New World'
+      ],
       year: '2025',
       universe: 'Earth-616',
       type: 'movie',
