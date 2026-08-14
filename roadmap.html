@@ -509,11 +509,18 @@ function updateRoadmapSelectionUI(){
 }
 
 function renderRoadmap(){
-  const mapPanel = document.getElementById('mapPanel');
-  mapPanel.innerHTML = buildRoadmapSvg();
+
+  const mapPanel =
+    document.getElementById('mapPanel');
+
+  mapPanel.innerHTML =
+    buildRoadmapSvg();
+
   updateRoadmapSelectionUI();
 
-  requestAnimationFrame(updateMapScrollTrail);
+  requestAnimationFrame(() => {
+    updateComicScrollbar();
+  });
 }
 
 const roadmapButtonContainer = document.getElementById('roadmapTimelineButtons');
