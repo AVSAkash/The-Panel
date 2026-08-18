@@ -588,11 +588,12 @@ function drawShareCanvas(){
     );
 
 
-  const marathonAchievements =
-    badges.map(b => ({
-      ...b,
-      kind: 'marathon'
-    }));
+  const marathonAchievements = badges
+  .filter(b => b && b.label)
+  .map(b => ({
+    ...b,
+    kind: 'marathon'
+  }));
 
 
   /* =====================================================
