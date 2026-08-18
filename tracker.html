@@ -43,7 +43,7 @@
         <button id="modeBoth" type="button">Movies + Series</button>
       </div>
       <div class="toolbar-actions">
-        <button class="btn btn-ghost btn-sm" id="shareProgressBtn" type="button">📤 Share Progress</button>
+        <button class="btn btn-ghost btn-sm" id="shareProgressBtn" type="button"> Share Progress</button>
         <button class="btn btn-ghost btn-sm" id="backupBtn" type="button">⬇ Backup (Export JSON)</button>
         <button class="btn btn-ghost btn-sm" id="importBtn" type="button">⬆ Import Backup</button>
         <input type="file" id="importFileInput" accept="application/json" style="display:none;">
@@ -121,11 +121,11 @@
         <label for="f-rating">Rating (1–5)</label>
         <select id="f-rating">
           <option value="0">—</option>
-          <option value="1">★</option>
-          <option value="2">★★</option>
-          <option value="3">★★★</option>
-          <option value="4">★★★★</option>
-          <option value="5">★★★★★</option>
+          <option value="1"></option>
+          <option value="2"></option>
+          <option value="3"></option>
+          <option value="4"></option>
+          <option value="5"></option>
         </select>
       </div>
       <div class="field" style="grid-column:1/-1;">
@@ -151,7 +151,7 @@
     <h3>Share Your Progress</h3>
     <p class="sub">A downloadable card summarizing your watch progress.</p>
     <div class="share-canvas-wrap">
-      <canvas id="shareCanvas" width="1080" height="1350"></canvas>
+      <canvas id="shareCanvas" width="1080" height="1450"></canvas>
     </div>
     <div class="modal-actions">
       <button class="btn" id="downloadShareBtn" type="button">Download Image</button>
@@ -366,7 +366,7 @@ function renderGrid(){
 
   grid.innerHTML = items.map((item, idx) => {
     const tilt = idx % 2 === 0 ? 'tilt-l' : 'tilt-r';
-    const stars = item.rating > 0 ? '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating) : '';
+    const stars = item.rating > 0 ? ''.repeat(item.rating) + ''.repeat(5 - item.rating) : '';
     const progress = (item.type === 'series' && (item.season || item.episode))
       ? `<div class="progress">S${item.season || '–'} · E${item.episode || '–'}</div>` : '';
     const posterRow = item.poster ? `
@@ -435,7 +435,7 @@ function renderBadges(){
     return;
   }
   row.innerHTML = badges.map(b => `
-    <div class="badge-stamp"><span class="trophy">🏆</span>${esc(b.label)}: Complete</div>
+    <div class="badge-stamp"><span class="trophy"></span>${esc(b.label)}: Complete</div>
   `).join('');
 }
 
@@ -508,115 +508,1447 @@ function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight){
 }
 
 function drawShareCanvas(){
+
   const ctx = shareCanvas.getContext('2d');
-  const W = shareCanvas.width, H = shareCanvas.height;
+
+  const W = shareCanvas.width;
+  const H = shareCanvas.height;
+
+
+  /* =====================================================
+     DATA
+     ===================================================== */
 
   const items = loadItems();
-  const counts = {want:0, watching:0, completed:0, dropped:0};
-  items.forEach(i => { if(counts[i.status] !== undefined) counts[i.status]++; });
+
+  const counts = {
+    want: 0,
+    watching: 0,
+    completed: 0,
+    dropped: 0
+  };
+
+  items.forEach(i => {
+    if(counts[i.status] !== undefined){
+      counts[i.status]++;
+    }
+  });
+
   const total = items.length;
-  const pct = total ? Math.round((counts.completed / total) * 100) : 0;
+
+  const pct =
+    total
+      ? Math.round((counts.completed / total) * 100)
+      : 0;
+
+
+  /* =====================================================
+     FAVORITE GENRE
+     ===================================================== */
 
   const genreCounts = {};
+
   items.forEach(i => {
-    const g = (i.genre || '').trim();
-    if(!g || g === 'Uncategorized') return;
-    genreCounts[g] = (genreCounts[g] || 0) + 1;
-  });
-  const topGenre = Object.entries(genreCounts).sort((a,b) => b[1]-a[1])[0];
 
-  const badges = computeCompletionBadges();
-  const cd = getCountdownParts();
+    const g =
+      (i.genre || '').trim();
 
-  /* background */
-  ctx.fillStyle = '#F2EDE1';
-  ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle = '#1B1B1B';
-  ctx.lineWidth = 14;
-  ctx.strokeRect(7,7,W-14,H-14);
+    if(!g || g === 'Uncategorized'){
+      return;
+    }
 
-  /* header */
-  ctx.fillStyle = '#1B1B1B';
-  ctx.font = '700 64px sans-serif';
-  ctx.fillText('PANEL', 60, 130);
-  ctx.fillStyle = '#D6362D';
-  ctx.font = '700 64px sans-serif';
-  ctx.fillText('.', 300, 130);
+    genreCounts[g] =
+      (genreCounts[g] || 0) + 1;
 
-  ctx.fillStyle = '#2B4C7E';
-  ctx.font = '600 26px monospace';
-  ctx.fillText('MY WATCH PROGRESS', 60, 175);
-
-  /* big completion number */
-  ctx.fillStyle = '#D6362D';
-  ctx.font = '700 220px sans-serif';
-  ctx.fillText(pct + '%', 60, 420);
-  ctx.fillStyle = '#1B1B1B';
-  ctx.font = '600 24px monospace';
-  ctx.fillText('OF TRACKED TITLES COMPLETED', 64, 465);
-
-  /* stat blocks */
-  const stats = [
-    ['TOTAL TRACKED', total],
-    ['COMPLETED', counts.completed],
-    ['WATCHING', counts.watching],
-    ['WANT TO WATCH', counts.want]
-  ];
-  const boxW = (W - 120 - 3*20) / 4;
-  stats.forEach((s, i) => {
-    const bx = 60 + i * (boxW + 20);
-    const by = 520;
-    ctx.strokeStyle = '#1B1B1B';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(bx, by, boxW, 130);
-    ctx.fillStyle = '#1B1B1B';
-    ctx.font = '700 48px sans-serif';
-    ctx.fillText(String(s[1]), bx + 16, by + 70);
-    ctx.font = '600 13px monospace';
-    wrapCanvasText(ctx, s[0], bx + 16, by + 105, boxW - 30, 16);
   });
 
-  /* top genre */
-  let cursorY = 720;
-  if(topGenre){
-    ctx.fillStyle = '#1B1B1B';
-    ctx.font = '600 22px monospace';
-    ctx.fillText(`FAVORITE GENRE: ${topGenre[0].toUpperCase()}`, 60, cursorY);
-    cursorY += 50;
-  }
+  const topGenre =
+    Object.entries(genreCounts)
+      .sort((a,b) => b[1] - a[1])[0];
 
-  /* badges */
-  ctx.font = '700 26px sans-serif';
-  ctx.fillText('ACHIEVEMENTS', 60, cursorY);
-  cursorY += 20;
-  if(badges.length){
-    badges.forEach(b => {
-      cursorY += 55;
-      ctx.fillStyle = '#F2B807';
-      ctx.strokeStyle = '#1B1B1B';
-      ctx.lineWidth = 3;
-      const label = `🏆 ${b.label}: Complete`;
-      ctx.font = '600 22px monospace';
-      const w = ctx.measureText(label).width + 40;
-      ctx.fillRect(60, cursorY - 32, w, 44);
-      ctx.strokeRect(60, cursorY - 32, w, 44);
-      ctx.fillStyle = '#1B1B1B';
-      ctx.fillText(label, 80, cursorY - 3);
+
+  /* =====================================================
+     MARATHON ACHIEVEMENTS
+     ===================================================== */
+
+  const badges =
+    computeCompletionBadges();
+
+
+  const completedTitleSet =
+    new Set(
+      items
+        .filter(i => i.status === 'completed')
+        .map(i =>
+          (i.title || '')
+            .trim()
+            .toLowerCase()
+        )
+        .filter(Boolean)
+    );
+
+
+  const marathonAchievements =
+    badges.map(b => ({
+      ...b,
+      kind: 'marathon'
+    }));
+
+
+  /* =====================================================
+     ULTIMATE MARVEL MARATHON
+     ===================================================== */
+
+  let ultimateComplete = false;
+
+
+  if(typeof ROADMAP_DATA !== 'undefined'){
+
+    const ultimateTitles =
+      new Map();
+
+
+    Object.values(ROADMAP_DATA).forEach(list => {
+
+      if(!Array.isArray(list)){
+        return;
+      }
+
+
+      list.forEach(it => {
+
+        const key =
+          (it.title || '')
+            .trim()
+            .toLowerCase();
+
+        if(key){
+
+          ultimateTitles.set(
+            key,
+            it.title.trim()
+          );
+
+        }
+
+      });
+
     });
-  }else{
-    cursorY += 40;
-    ctx.fillStyle = '#555';
-    ctx.font = 'italic 20px monospace';
-    ctx.fillText('None yet — keep watching!', 60, cursorY);
+
+
+    ultimateComplete =
+      ultimateTitles.size > 0 &&
+      [...ultimateTitles.keys()]
+        .every(title =>
+          completedTitleSet.has(title)
+        );
+
   }
 
-  /* footer / countdown */
+
+  if(ultimateComplete){
+
+    marathonAchievements.unshift({
+
+      key: 'ultimate',
+
+      label:
+        'Ultimate Marvel Marathon',
+
+      color:
+        '#D6362D',
+
+      kind:
+        'ultimate'
+
+    });
+
+  }
+
+
+  const cd =
+    getCountdownParts();
+
+
+  /* =====================================================
+     COMIC BOOK PAGE
+     
+     Cream outside
+     Black border
+     Cream inside
+     ===================================================== */
+
+  const OUTER_MARGIN = 18;
+  const BORDER = 14;
+
+
+  /* Entire image */
+
+  ctx.fillStyle =
+    '#F2EDE1';
+
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+
+  /* Thick black outer frame */
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.fillRect(
+    OUTER_MARGIN,
+    OUTER_MARGIN,
+    W - OUTER_MARGIN * 2,
+    H - OUTER_MARGIN * 2
+  );
+
+
+  /* Cream inner page */
+
+  ctx.fillStyle =
+    '#F2EDE1';
+
+  ctx.fillRect(
+    OUTER_MARGIN + BORDER,
+    OUTER_MARGIN + BORDER,
+    W - (OUTER_MARGIN + BORDER) * 2,
+    H - (OUTER_MARGIN + BORDER) * 2
+  );
+
+
+  /* =====================================================
+     HEADER
+     ===================================================== */
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.font =
+    '700 64px sans-serif';
+
+  ctx.fillText(
+    'PANEL',
+    60,
+    130
+  );
+
+
+  ctx.fillStyle =
+    '#D6362D';
+
+  ctx.font =
+    '700 64px sans-serif';
+
+  ctx.fillText(
+    '.',
+    300,
+    130
+  );
+
+
+  ctx.fillStyle =
+    '#2B4C7E';
+
+  ctx.font =
+    '600 26px monospace';
+
+  ctx.fillText(
+    'MY WATCH PROGRESS',
+    60,
+    175
+  );
+
+
+  /* =====================================================
+     BIG COMPLETION NUMBER
+     ===================================================== */
+
+  ctx.fillStyle =
+    '#D6362D';
+
+  ctx.font =
+    '700 220px sans-serif';
+
+  ctx.fillText(
+    pct + '%',
+    60,
+    420
+  );
+
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.font =
+    '600 24px monospace';
+
+  ctx.fillText(
+    'OF TRACKED TITLES COMPLETED',
+    64,
+    465
+  );
+
+
+  /* =====================================================
+     STAT BLOCKS
+     ===================================================== */
+
+  const stats = [
+
+    [
+      'TOTAL TRACKED',
+      total
+    ],
+
+    [
+      'COMPLETED',
+      counts.completed
+    ],
+
+    [
+      'WATCHING',
+      counts.watching
+    ],
+
+    [
+      'WANT TO WATCH',
+      counts.want
+    ]
+
+  ];
+
+
+  const boxW =
+    (W - 120 - 3 * 20) / 4;
+
+
+  stats.forEach((s, i) => {
+
+    const bx =
+      60 + i * (boxW + 20);
+
+    const by =
+      520;
+
+
+    ctx.strokeStyle =
+      '#1B1B1B';
+
+    ctx.lineWidth =
+      4;
+
+
+    ctx.strokeRect(
+      bx,
+      by,
+      boxW,
+      130
+    );
+
+
+    ctx.fillStyle =
+      '#1B1B1B';
+
+    ctx.font =
+      '700 48px sans-serif';
+
+    ctx.fillText(
+      String(s[1]),
+      bx + 16,
+      by + 70
+    );
+
+
+    ctx.font =
+      '600 13px monospace';
+
+
+    wrapCanvasText(
+      ctx,
+      s[0],
+      bx + 16,
+      by + 105,
+      boxW - 30,
+      16
+    );
+
+  });
+
+
+  /* =====================================================
+     FAVORITE GENRE
+     ===================================================== */
+
+  let cursorY =
+    720;
+
+
+  if(topGenre){
+
+    ctx.fillStyle =
+      '#1B1B1B';
+
+    ctx.font =
+      '600 22px monospace';
+
+    ctx.fillText(
+      `FAVORITE GENRE: ${topGenre[0].toUpperCase()}`,
+      60,
+      cursorY
+    );
+
+    cursorY += 50;
+
+  }
+
+
+  /* =====================================================
+     ACHIEVEMENT HEADING
+     ===================================================== */
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.font =
+    '900 30px sans-serif';
+
+  ctx.fillText(
+    'MARATHON ACHIEVEMENTS',
+    60,
+    cursorY
+  );
+
+  cursorY += 28;
+
+
+  /* =====================================================
+     ULTIMATE OVERRIDES ALL OTHER ACHIEVEMENTS
+     ===================================================== */
+
+  const ultimateCompleted =
+    marathonAchievements.some(
+      achievement =>
+        achievement.kind === 'ultimate'
+    );
+
+
+  const achievementsToShow =
+    ultimateCompleted
+
+      ? marathonAchievements.filter(
+          achievement =>
+            achievement.kind === 'ultimate'
+        )
+
+      : marathonAchievements;
+
+
+  /* =====================================================
+     ACHIEVEMENTS
+     ===================================================== */
+
+  if(achievementsToShow.length){
+
+    achievementsToShow.forEach(b => {
+
+      if(b.kind === 'ultimate'){
+
+  /* =====================================================
+     ULTIMATE MARVEL MARATHON
+     FINAL ACHIEVEMENT
+     ===================================================== */
+
+  const ux = 60;
+  const uy = cursorY;
+
+  const uw = W - 120;
+  const uh = 420;
+
+  const cx = ux + uw / 2;
+
+  ctx.save();
+
+
+  /* =====================================================
+     BLACK COMIC SHADOW
+     ===================================================== */
+
   ctx.fillStyle = '#1B1B1B';
-  ctx.font = '600 20px monospace';
-  ctx.fillText(`AVENGERS: DOOMSDAY IN ${cd.days} DAYS`, 60, H - 90);
-  ctx.fillStyle = '#555';
-  ctx.font = '13px monospace';
-  ctx.fillText(new Date().toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}), 60, H - 55);
+
+  ctx.fillRect(
+    ux + 12,
+    uy + 12,
+    uw,
+    uh
+  );
+
+
+  /* =====================================================
+     MAIN RED COMIC PANEL
+     ===================================================== */
+
+  ctx.fillStyle = '#D6362D';
+
+  ctx.strokeStyle = '#1B1B1B';
+
+  ctx.lineWidth = 7;
+
+  ctx.fillRect(
+    ux,
+    uy,
+    uw,
+    uh
+  );
+
+  ctx.strokeRect(
+    ux,
+    uy,
+    uw,
+    uh
+  );
+
+
+  /* =====================================================
+     HALFTONE BACKGROUND
+     ===================================================== */
+
+  ctx.fillStyle =
+    'rgba(242,237,225,.14)';
+
+  for(
+    let yy = uy + 12;
+    yy < uy + uh - 10;
+    yy += 15
+  ){
+
+    for(
+      let xx = ux + 12;
+      xx < ux + uw - 10;
+      xx += 15
+    ){
+
+      ctx.beginPath();
+
+      ctx.arc(
+        xx,
+        yy,
+        1.8,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+    }
+
+  }
+
+
+  /* =====================================================
+     COMIC SPEED LINES
+     ===================================================== */
+
+  ctx.strokeStyle =
+    'rgba(27,27,27,.30)';
+
+  ctx.lineWidth = 3;
+
+  const speedLines = [
+    [ux + 35, uy + 75, ux + 180, uy + 75],
+    [ux + 25, uy + 95, ux + 145, uy + 95],
+    [ux + 35, uy + 115, ux + 125, uy + 115],
+
+    [ux + uw - 180, uy + 75, ux + uw - 35, uy + 75],
+    [ux + uw - 145, uy + 95, ux + uw - 25, uy + 95],
+    [ux + uw - 125, uy + 115, ux + uw - 35, uy + 115],
+
+    [ux + 35, uy + uh - 75, ux + 175, uy + uh - 75],
+    [ux + 25, uy + uh - 95, ux + 145, uy + uh - 95],
+
+    [ux + uw - 175, uy + uh - 75, ux + uw - 35, uy + uh - 75],
+    [ux + uw - 145, uy + uh - 95, ux + uw - 25, uy + uh - 95]
+  ];
+
+  speedLines.forEach(line => {
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      line[0],
+      line[1]
+    );
+
+    ctx.lineTo(
+      line[2],
+      line[3]
+    );
+
+    ctx.stroke();
+
+  });
+
+
+  /* =====================================================
+     COMIC BURST FUNCTION
+     ===================================================== */
+
+  function drawBurst(x, y, outer, inner, points){
+
+    ctx.save();
+
+    ctx.translate(x, y);
+
+    ctx.fillStyle = '#F2B807';
+
+    ctx.strokeStyle = '#1B1B1B';
+
+    ctx.lineWidth = 5;
+
+    ctx.beginPath();
+
+    for(let i = 0; i < points; i++){
+
+      const angle =
+        (Math.PI * 2 * i) / points;
+
+      const radius =
+        i % 2 === 0
+          ? outer
+          : inner;
+
+      const px =
+        Math.cos(angle) * radius;
+
+      const py =
+        Math.sin(angle) * radius;
+
+      if(i === 0){
+
+        ctx.moveTo(px, py);
+
+      }else{
+
+        ctx.lineTo(px, py);
+
+      }
+
+    }
+
+    ctx.closePath();
+
+    ctx.fill();
+
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+
+  /* =====================================================
+     SIDE BURSTS
+     ===================================================== */
+
+  drawBurst(
+    ux + 105,
+    uy + 215,
+    70,
+    42,
+    18
+  );
+
+  drawBurst(
+    ux + uw - 105,
+    uy + 215,
+    70,
+    42,
+    18
+  );
+
+
+  /* =====================================================
+     TOP COMIC CAPTION
+     ===================================================== */
+
+  const captionW = 250;
+  const captionH = 38;
+
+  const captionX =
+    cx - captionW / 2;
+
+  const captionY =
+    uy + 18;
+
+
+  ctx.fillStyle =
+    '#F2EDE1';
+
+  ctx.strokeStyle =
+    '#1B1B1B';
+
+  ctx.lineWidth = 4;
+
+  ctx.fillRect(
+    captionX,
+    captionY,
+    captionW,
+    captionH
+  );
+
+  ctx.strokeRect(
+    captionX,
+    captionY,
+    captionW,
+    captionH
+  );
+
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.font =
+    '900 15px monospace';
+
+  ctx.textAlign =
+    'center';
+
+  ctx.fillText(
+    'FINAL ACHIEVEMENT',
+    cx,
+    captionY + 25
+  );
+
+
+  /* =====================================================
+     ULTIMATE MARVEL TITLE PLATE
+     ===================================================== */
+
+  const titleW = 560;
+  const titleH = 62;
+
+  const titleX =
+    cx - titleW / 2;
+
+  const titleY =
+    uy + 70;
+
+
+  /* black offset */
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.fillRect(
+    titleX + 7,
+    titleY + 7,
+    titleW,
+    titleH
+  );
+
+
+  /* cream plate */
+
+  ctx.fillStyle =
+    '#F2EDE1';
+
+  ctx.strokeStyle =
+    '#1B1B1B';
+
+  ctx.lineWidth = 5;
+
+  ctx.fillRect(
+    titleX,
+    titleY,
+    titleW,
+    titleH
+  );
+
+  ctx.strokeRect(
+    titleX,
+    titleY,
+    titleW,
+    titleH
+  );
+
+
+  /* title */
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.font =
+    '900 40px sans-serif';
+
+  ctx.fillText(
+    'ULTIMATE MARVEL',
+    cx,
+    titleY + 42
+  );
+
+
+  /* =====================================================
+     MARATHON YELLOW BURST
+     ===================================================== */
+
+  const marathonW = 380;
+  const marathonH = 58;
+
+  const marathonX =
+    cx - marathonW / 2;
+
+  const marathonY =
+    uy + 145;
+
+
+  /* black shadow */
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.fillRect(
+    marathonX + 7,
+    marathonY + 7,
+    marathonW,
+    marathonH
+  );
+
+
+  /* yellow plate */
+
+  ctx.fillStyle =
+    '#F2B807';
+
+  ctx.strokeStyle =
+    '#1B1B1B';
+
+  ctx.lineWidth = 5;
+
+  ctx.fillRect(
+    marathonX,
+    marathonY,
+    marathonW,
+    marathonH
+  );
+
+  ctx.strokeRect(
+    marathonX,
+    marathonY,
+    marathonW,
+    marathonH
+  );
+
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.font =
+    '900 39px sans-serif';
+
+  ctx.fillText(
+    'MARATHON',
+    cx,
+    marathonY + 40
+  );
+
+
+  /* =====================================================
+     COMPLETE STAMP
+     ===================================================== */
+
+  const stampW = 350;
+  const stampH = 62;
+
+  const stampX =
+    cx - stampW / 2;
+
+  const stampY =
+    uy + 218;
+
+
+  ctx.save();
+
+  ctx.translate(
+    cx,
+    stampY + stampH / 2
+  );
+
+  ctx.rotate(-0.025);
+
+
+  /* black shadow */
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.fillRect(
+    -stampW / 2 + 8,
+    -stampH / 2 + 8,
+    stampW,
+    stampH
+  );
+
+
+  /* yellow stamp */
+
+  ctx.fillStyle =
+    '#F2B807';
+
+  ctx.strokeStyle =
+    '#1B1B1B';
+
+  ctx.lineWidth = 5;
+
+  ctx.fillRect(
+    -stampW / 2,
+    -stampH / 2,
+    stampW,
+    stampH
+  );
+
+  ctx.strokeRect(
+    -stampW / 2,
+    -stampH / 2,
+    stampW,
+    stampH
+  );
+
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.font =
+    '900 36px sans-serif';
+
+  ctx.fillText(
+    'COMPLETE',
+    0,
+    13
+  );
+
+  ctx.restore();
+
+
+  /* =====================================================
+     COMIC DIVIDER
+     ===================================================== */
+
+  ctx.strokeStyle =
+    '#1B1B1B';
+
+  ctx.lineWidth = 3;
+
+  ctx.setLineDash([12, 8]);
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    ux + 95,
+    uy + 305
+  );
+
+  ctx.lineTo(
+    ux + uw - 95,
+    uy + 305
+  );
+
+  ctx.stroke();
+
+  ctx.setLineDash([]);
+
+
+  /* =====================================================
+     EVERY MARVEL BRANCH CONQUERED
+     ===================================================== */
+
+  const branchW = 500;
+  const branchH = 38;
+
+  const branchX =
+    cx - branchW / 2;
+
+  const branchY =
+    uy + 320;
+
+
+  ctx.fillStyle =
+    '#F2EDE1';
+
+  ctx.strokeStyle =
+    '#1B1B1B';
+
+  ctx.lineWidth = 3;
+
+  ctx.fillRect(
+    branchX,
+    branchY,
+    branchW,
+    branchH
+  );
+
+  ctx.strokeRect(
+    branchX,
+    branchY,
+    branchW,
+    branchH
+  );
+
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.font =
+    '900 15px monospace';
+
+  ctx.fillText(
+    'EVERY MARVEL BRANCH CONQUERED',
+    cx,
+    branchY + 25
+  );
+
+
+  /* =====================================================
+     SMALL COMIC CAPTION
+     ===================================================== */
+
+  ctx.fillStyle =
+    '#F2EDE1';
+
+  ctx.font =
+    '900 11px monospace';
+
+  ctx.fillText(
+    'MCU · X-MEN · SPIDER-MAN · SONY · FANTASTIC FOUR · ALL TIMELINES',
+    cx,
+    uy + 390
+  );
+
+
+  ctx.textAlign =
+    'left';
+
+  ctx.restore();
+
+
+  /* =====================================================
+     SPACE AFTER ULTIMATE ACHIEVEMENT
+     ===================================================== */
+
+  cursorY +=
+    uh + 35;
+
+
+  return;
+}
+
+      
+        
+
+
+        
+
+      /* =================================================
+         NORMAL MARATHON ACHIEVEMENT
+         ================================================= */
+
+      const label =
+        `${b.label} — COMPLETE`;
+
+
+      const maxW =
+        W - 120;
+
+
+      const paddingX =
+        30;
+
+
+      const maxTextW =
+        maxW -
+        paddingX * 2;
+
+
+      ctx.font =
+        '900 28px sans-serif';
+
+
+      const words =
+        label.split(/\s+/);
+
+
+      const lines =
+        [];
+
+
+      let line =
+        '';
+
+
+      words.forEach(word => {
+
+        const test =
+          line
+            ? `${line} ${word}`
+            : word;
+
+
+        if(
+          ctx.measureText(test).width
+          <= maxTextW
+        ){
+
+          line =
+            test;
+
+        }else{
+
+          if(line){
+            lines.push(line);
+          }
+
+          line =
+            word;
+
+        }
+
+      });
+
+
+      if(line){
+        lines.push(line);
+      }
+
+
+      const lineH =
+        35;
+
+
+      const boxH =
+        Math.max(
+          92,
+          lines.length * lineH + 45
+        );
+
+
+      cursorY +=
+        12;
+
+
+      ctx.save();
+
+
+      /* ---------------------------------------------
+         INK SHADOW
+         --------------------------------------------- */
+
+      ctx.fillStyle =
+        '#1B1B1B';
+
+
+      ctx.fillRect(
+        68,
+        cursorY + 7,
+        maxW,
+        boxH
+      );
+
+
+      /* ---------------------------------------------
+         MAIN COMIC PANEL
+         --------------------------------------------- */
+
+      ctx.fillStyle =
+        '#F2B807';
+
+      ctx.strokeStyle =
+        '#1B1B1B';
+
+      ctx.lineWidth =
+        5;
+
+
+      ctx.fillRect(
+        60,
+        cursorY,
+        maxW,
+        boxH
+      );
+
+
+      ctx.strokeRect(
+        60,
+        cursorY,
+        maxW,
+        boxH
+      );
+
+
+      /* ---------------------------------------------
+         HALFTONE
+         --------------------------------------------- */
+
+      ctx.fillStyle =
+        'rgba(27,27,27,.10)';
+
+
+      for(
+        let yy = cursorY + 10;
+        yy < cursorY + boxH - 8;
+        yy += 13
+      ){
+
+        for(
+          let xx = 70;
+          xx < 60 + maxW - 8;
+          xx += 13
+        ){
+
+          ctx.beginPath();
+
+          ctx.arc(
+            xx,
+            yy,
+            1.5,
+            0,
+            Math.PI * 2
+          );
+
+          ctx.fill();
+
+        }
+
+      }
+
+
+      /* ---------------------------------------------
+         COMIC BURST
+         --------------------------------------------- */
+
+      ctx.fillStyle =
+        '#D6362D';
+
+      ctx.strokeStyle =
+        '#1B1B1B';
+
+      ctx.lineWidth =
+        3;
+
+
+      const bx =
+        60 + maxW - 48;
+
+      const by =
+        cursorY + 42;
+
+
+      ctx.beginPath();
+
+
+      for(
+        let i = 0;
+        i < 16;
+        i++
+      ){
+
+        const a =
+          (Math.PI * 2 * i) /
+          16;
+
+
+        const r =
+          i % 2 === 0
+            ? 29
+            : 17;
+
+
+        const x =
+          bx +
+          Math.cos(a) * r;
+
+
+        const y =
+          by +
+          Math.sin(a) * r;
+
+
+        if(i === 0){
+
+          ctx.moveTo(
+            x,
+            y
+          );
+
+        }else{
+
+          ctx.lineTo(
+            x,
+            y
+          );
+
+        }
+
+      }
+
+
+      ctx.closePath();
+
+      ctx.fill();
+
+      ctx.stroke();
+
+
+      /* ---------------------------------------------
+         ACHIEVEMENT TEXT
+         --------------------------------------------- */
+
+      ctx.fillStyle =
+        '#1B1B1B';
+
+      ctx.font =
+        '900 28px sans-serif';
+
+
+      lines.forEach(
+        (text, index) => {
+
+          ctx.fillText(
+            text,
+            60 + paddingX,
+            cursorY +
+              38 +
+              index * lineH
+          );
+
+        }
+      );
+
+
+      /* ---------------------------------------------
+         CAPTION
+         --------------------------------------------- */
+
+      const captionY =
+        cursorY +
+        boxH -
+        28;
+
+
+      ctx.fillStyle =
+        '#F2EDE1';
+
+      ctx.strokeStyle =
+        '#1B1B1B';
+
+      ctx.lineWidth =
+        2;
+
+
+      ctx.fillRect(
+        60 + paddingX,
+        captionY - 17,
+        130,
+        22
+      );
+
+
+      ctx.strokeRect(
+        60 + paddingX,
+        captionY - 17,
+        130,
+        22
+      );
+
+
+      ctx.fillStyle =
+        '#1B1B1B';
+
+      ctx.font =
+        '900 11px monospace';
+
+
+      ctx.fillText(
+        'MARATHON CLEARED',
+        60 + paddingX + 10,
+        captionY - 2
+      );
+
+
+      ctx.restore();
+
+
+      cursorY +=
+        boxH + 20;
+
+    });
+
+
+  }else{
+
+    /* =================================================
+       NO ACHIEVEMENTS
+       ================================================= */
+
+    cursorY +=
+      34;
+
+
+    ctx.fillStyle =
+      '#555';
+
+    ctx.font =
+      'italic 20px monospace';
+
+
+    ctx.fillText(
+      'No marathon completed yet — keep watching!',
+      60,
+      cursorY
+    );
+
+  }
+
+
+  /* =====================================================
+     FOOTER / DOOMSDAY COUNTDOWN
+     ===================================================== */
+
+  ctx.fillStyle =
+    '#1B1B1B';
+
+  ctx.font =
+    '600 20px monospace';
+
+
+  ctx.fillText(
+    `AVENGERS: DOOMSDAY IN ${cd.days} DAYS`,
+    60,
+    H - 90
+  );
+
+
+  ctx.fillStyle =
+    '#555';
+
+  ctx.font =
+    '13px monospace';
+
+
+  ctx.fillText(
+    new Date().toLocaleDateString(
+      'en-US',
+      {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      }
+    ),
+    60,
+    H - 55
+  );
+
 }
 
 document.getElementById('shareProgressBtn').addEventListener('click', () => {
