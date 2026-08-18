@@ -1389,6 +1389,7 @@ const ROADMAP_DATA = {
       year: '2015',
       universe: 'Earth-15866',
       type: 'movie',
+      optional: true,
       description:
         'Four explorers gain extraordinary abilities after an experiment goes wrong and must face a powerful enemy.',
         mustWatchBefore: []
