@@ -21,6 +21,11 @@
         onclick="navigateWithTransition('roadmap.html'); return false;">
         ROADMAP
       </a>
+
+      <a href="marathon.html"
+        onclick="navigateWithTransition('marathon.html'); return false;">
+        MARATHON
+      </a>
     </div>
     <div class="mini-countdown" id="miniCountdown">Doomsday in ...</div>
   </div>
@@ -70,7 +75,7 @@
   </section>
 
   <div class="strip-label">Convergence Map &middot; How the timelines collide</div>
-  <div class="map-hint">Click any stop to add it to your tracker. Scroll sideways to follow the lines. ● movie &nbsp; ◆ series &nbsp; ┄ dashed = optional watch</div>
+  <div class="map-hint">Click any stop to add it to your tracker. Scroll sideways to follow the lines. ● movie &nbsp; ◆ series &nbsp; ┄ dashed = optional watch &nbsp; ✓ completed &nbsp; • in your tracker</div>
   <div class="map-legend">
     <span><i style="background:var(--track-mcu)"></i>MCU Main Line</span>
     <span><i style="background:var(--track-raimi)"></i>Raimi Spider-Man</span>
@@ -94,6 +99,12 @@
     </div>
     <div class="roadmap-timeline-buttons" id="roadmapTimelineButtons"></div>
     <div class="roadmap-selection-status" id="roadmapSelectionStatus"></div>
+
+    <div class="map-search">
+      <input type="text" id="mapSearchInput" list="mapTitleList" placeholder="Jump to a title...">
+      <datalist id="mapTitleList"></datalist>
+      <button type="button" class="btn btn-sm" id="mapSearchBtn">Go</button>
+    </div>
   </div>
 
   <div class="map-scroll">
@@ -141,10 +152,10 @@ const DAREDEVIL = ROADMAP_DATA.DAREDEVIL;
 const FANTASTIC_FOUR = ROADMAP_DATA.FANTASTIC_FOUR;
 const VENOM = ROADMAP_DATA.VENOM;
 
-const MERGE_A_IDX = TRUNK.findIndex(x => x.title === 'No Way Home');
+const MERGE_A_IDX = TRUNK.findIndex(x => x.title === 'Spider-Man: No Way Home');
 const MERGE_B_IDX = TRUNK.findIndex(x => x.title === 'Deadpool & Wolverine');
 const MERGE_C_IDX = TRUNK.findIndex(x => x.title === 'Daredevil: Born Again');
-const MERGE_D_IDX = TRUNK.findIndex(x => x.title === 'Fantastic Four');
+const MERGE_D_IDX = TRUNK.findIndex(x => x.title === 'The Fantastic Four: First Steps');
 
 
 const TRUNK_Y = 280, RAIMI_Y = 60, VENOM_Y=220,FANTASTIC_FOUR_Y = 210, AMAZING_Y = 150, XMEN_Y = 420,DAREDEVIL_Y = 440;
@@ -174,7 +185,7 @@ const venomPts = VENOM.map((item, i) => ({
 const svgWidth = trunkX(TRUNK.length - 1) + 120;
 const svgHeight = DAREDEVIL_Y + 100;
 
-const PHASE_END_IDX = TRUNK.findIndex(x => x.title === 'Avengers : Endgame'); // last index covered by the Phase 1-3 bracket
+const PHASE_END_IDX = TRUNK.findIndex(x => x.title === 'Avengers: Endgame'); // last index covered by the Phase 1-3 bracket
 const phaseX1 = trunkX(0), phaseX2 = trunkX(PHASE_END_IDX);
 const phaseY = 358;
 function venomConnection(fromX, fromY, toX, toY){
@@ -195,6 +206,17 @@ function mergeCurve(fromX, fromY, toY){
   const midY = (fromY + toY) / 2;
   return `M ${fromX} ${fromY} C ${fromX} ${midY} ${fromX} ${midY} ${fromX} ${toY}`;
 }
+let roadmapProgressMap = {};
+
+function refreshRoadmapProgressMap(){
+  roadmapProgressMap = {};
+  loadItems().forEach(it => {
+    if(it && it.title){
+      roadmapProgressMap[it.title.toLowerCase()] = it.status;
+    }
+  });
+}
+
 function nodesSvg(pts, color, labelAbove, stagger){
   return pts.map((p, i) => {
     const title = p.title.replace(/'/g, "\\'");
@@ -259,8 +281,23 @@ function nodesSvg(pts, color, labelAbove, stagger){
                   stroke-width="3"${dash}/>`
           );
 
+    const trackerStatus = roadmapProgressMap[p.title.toLowerCase()];
+    const progressBadge = trackerStatus ? `
+        <circle
+          cx="${p.x + 11}"
+          cy="${p.y - 11}"
+          r="7.5"
+          fill="${trackerStatus === 'completed' ? 'var(--track-mcu)' : 'var(--yellow)'}"
+          stroke="var(--ink)"
+          stroke-width="1.5"
+          class="progress-badge"/>
+        ${trackerStatus === 'completed' ? `
+        <text x="${p.x + 11}" y="${p.y - 8}" text-anchor="middle" class="progress-badge-check">&#10003;</text>
+        ` : ''}
+      ` : '';
+
     return `
-      <g class="map-node"
+      <g class="map-node" data-title="${title}"
         onclick="openRoadmapDetails('${title}', '${p.year}', '${isSeries ? 'series' : 'movie'}', '${p.universe}', ${p.hero ? 'true' : 'false'}, ${isOptional ? 'true' : 'false'},'${safeDescription}',${safeMustWatch})">
 
         ${p.hero ? `
@@ -340,6 +377,8 @@ function nodesSvg(pts, color, labelAbove, stagger){
           text-anchor="middle">optional</text>
         ` : ''}
 
+        ${progressBadge}
+
       </g>`;
   }).join('');
 }
@@ -389,11 +428,36 @@ const ROADMAP_LAYERS = {
   }
 };
 
-const roadmapSelection = new Set(Object.keys(ROADMAP_LAYERS));
+const ROADMAP_SELECTION_KEY = 'panel_roadmap_selection';
+
+function loadSavedRoadmapSelection(){
+  try{
+    const raw = localStorage.getItem(ROADMAP_SELECTION_KEY);
+    if(!raw) return new Set(Object.keys(ROADMAP_LAYERS));
+    const arr = JSON.parse(raw);
+    const valid = Array.isArray(arr) ? arr.filter(k => ROADMAP_LAYERS[k]) : [];
+    return valid.length ? new Set(valid) : new Set(Object.keys(ROADMAP_LAYERS));
+  }catch(e){
+    return new Set(Object.keys(ROADMAP_LAYERS));
+  }
+}
+
+function saveRoadmapSelection(){
+  try{
+    localStorage.setItem(ROADMAP_SELECTION_KEY, JSON.stringify([...roadmapSelection]));
+  }catch(e){
+    console.error('Could not save timeline selection', e);
+  }
+}
+
+const roadmapSelection = loadSavedRoadmapSelection();
 
 function roadmapSelected(key){
   return roadmapSelection.has(key);
 }
+
+let currentViewMinX = 0;
+let currentViewMinY = 0;
 
 function buildRoadmapSvg(){
   const selectedKeys = Object.keys(ROADMAP_LAYERS).filter(roadmapSelected);
@@ -471,6 +535,9 @@ function buildRoadmapSvg(){
     paths.push(`<text x="${(phaseX1+phaseX2)/2}" y="${phaseY+20}" text-anchor="middle" class="phase-label" fill="var(--ink)">PHASE 1–3 · THE INFINITY SAGA</text>`);
   }
 
+  currentViewMinX = viewMinX;
+  currentViewMinY = viewMinY;
+
   return `
     <svg
       viewBox="${viewMinX} ${viewMinY} ${viewWidth} ${viewHeight}"
@@ -510,6 +577,8 @@ function updateRoadmapSelectionUI(){
 
 function renderRoadmap(){
 
+  refreshRoadmapProgressMap();
+
   const mapPanel =
     document.getElementById('mapPanel');
 
@@ -525,6 +594,8 @@ function renderRoadmap(){
 
 const roadmapButtonContainer = document.getElementById('roadmapTimelineButtons');
 
+const roadmapEarnedBadgeKeys = new Set(computeCompletionBadges().map(b => b.key));
+
 roadmapButtonContainer.innerHTML = Object.entries(ROADMAP_LAYERS).map(([key, layer]) => `
   <button
     type="button"
@@ -534,6 +605,7 @@ roadmapButtonContainer.innerHTML = Object.entries(ROADMAP_LAYERS).map(([key, lay
   >
     <i style="background:${layer.color}"></i>
     <span>${layer.label}</span>
+    ${roadmapEarnedBadgeKeys.has(key) ? '<span class="badge-complete">✓ COMPLETE</span>' : ''}
   </button>
 `).join('');
 
@@ -549,16 +621,19 @@ roadmapButtonContainer.addEventListener('click', event => {
     roadmapSelection.add(key);
   }
 
+  saveRoadmapSelection();
   renderRoadmap();
 });
 
 document.getElementById('roadmapSelectAll').addEventListener('click', () => {
   Object.keys(ROADMAP_LAYERS).forEach(key => roadmapSelection.add(key));
+  saveRoadmapSelection();
   renderRoadmap();
 });
 
 document.getElementById('roadmapClearAll').addEventListener('click', () => {
   roadmapSelection.clear();
+  saveRoadmapSelection();
   renderRoadmap();
 });
 
@@ -850,6 +925,84 @@ requestAnimationFrame(() => {
 
 setTimeout(updateComicScrollbar, 100);
 setTimeout(updateComicScrollbar, 500);
+
+/* =====================================================
+   SEARCH / JUMP ON MAP
+   ===================================================== */
+
+function allRoadmapPoints(){
+  return Object.values(ROADMAP_LAYERS).flatMap(l => l.points);
+}
+
+function layerKeyForPoint(point){
+  return Object.keys(ROADMAP_LAYERS).find(k => ROADMAP_LAYERS[k].points.includes(point));
+}
+
+function highlightMapNode(title){
+  if(typeof CSS === 'undefined' || !CSS.escape) return;
+  const g = mapPanel.querySelector(`[data-title="${CSS.escape(title)}"]`);
+  if(!g) return;
+  g.classList.add('map-node-highlight');
+  setTimeout(() => g.classList.remove('map-node-highlight'), 1700);
+}
+
+function jumpToRoadmapTitle(query){
+  const q = (query || '').trim().toLowerCase();
+  if(!q){
+    showToast('Type a title to jump to');
+    return;
+  }
+
+  const points = allRoadmapPoints();
+  let match = points.find(p => p.title.toLowerCase() === q);
+  if(!match) match = points.find(p => p.title.toLowerCase().includes(q));
+
+  if(!match){
+    showToast(`No title matching "${query}" found`);
+    return;
+  }
+
+  // Make sure the timeline that title belongs to is actually visible
+  const layerKey = layerKeyForPoint(match);
+  let selectionChanged = false;
+  if(layerKey && !roadmapSelected(layerKey)){
+    roadmapSelection.add(layerKey);
+    selectionChanged = true;
+  }
+
+  if(selectionChanged) saveRoadmapSelection();
+
+  renderRoadmap();
+
+  requestAnimationFrame(() => {
+    const targetX = (match.x - currentViewMinX) - (mapPanel.clientWidth / 2);
+    mapPanel.scrollTo({ left: Math.max(0, targetX), behavior: 'smooth' });
+    setTimeout(() => highlightMapNode(match.title), 300);
+  });
+}
+
+const mapSearchInput = document.getElementById('mapSearchInput');
+const mapSearchBtn = document.getElementById('mapSearchBtn');
+const mapTitleList = document.getElementById('mapTitleList');
+
+if(mapTitleList){
+  const uniqueTitles = [...new Set(allRoadmapPoints().map(p => p.title))].sort();
+  mapTitleList.innerHTML = uniqueTitles
+    .map(t => `<option value="${t.replace(/"/g, '&quot;')}">`)
+    .join('');
+}
+
+if(mapSearchBtn){
+  mapSearchBtn.addEventListener('click', () => jumpToRoadmapTitle(mapSearchInput.value));
+}
+if(mapSearchInput){
+  mapSearchInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      jumpToRoadmapTitle(mapSearchInput.value);
+    }
+  });
+}
 
 /* -------- Track A: Infinity Saga -------- */
 
