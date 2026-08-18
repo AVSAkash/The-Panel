@@ -65,6 +65,7 @@ function setMode(mode){
 function addItem(item){
   const items = loadItems();
   item.id = 'it_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+  if(!item.dateAdded) item.dateAdded = Date.now();
   items.unshift(item);
   saveItems(items);
   return item;
@@ -82,6 +83,90 @@ function updateItem(id, patch){
     items[idx] = {...items[idx], ...patch};
     saveItems(items);
   }
+}
+
+/* ===================== backup / restore (export-import JSON) ===================== */
+function exportBackup(){
+  const payload = {
+    app: 'PANEL',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    mode: getMode(),
+    items: loadItems()
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `panel-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('Backup downloaded');
+}
+
+const VALID_STATUSES = ['want', 'watching', 'completed', 'dropped'];
+
+function sanitizeImportedItem(raw){
+  if(!raw || typeof raw.title !== 'string' || !raw.title.trim()) return null;
+  return {
+    id: (typeof raw.id === 'string' && raw.id) || ('it_' + Date.now() + '_' + Math.floor(Math.random()*1000)),
+    title: raw.title.trim(),
+    type: raw.type === 'series' ? 'series' : 'movie',
+    genre: (typeof raw.genre === 'string' && raw.genre.trim()) || 'Uncategorized',
+    status: VALID_STATUSES.includes(raw.status) ? raw.status : 'want',
+    poster: typeof raw.poster === 'string' ? raw.poster : '',
+    season: raw.season || '',
+    episode: raw.episode || '',
+    rating: Number(raw.rating) || 0,
+    notes: typeof raw.notes === 'string' ? raw.notes : '',
+    dateAdded: Number(raw.dateAdded) || Date.now()
+  };
+}
+
+/* callback(err, count) */
+function importBackupFile(file, callback){
+  if(!file){ callback(new Error('No file selected')); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      const rawItems = Array.isArray(parsed) ? parsed : parsed.items;
+      if(!Array.isArray(rawItems)) throw new Error('This file does not look like a PANEL backup.');
+      const clean = rawItems.map(sanitizeImportedItem).filter(Boolean);
+      saveItems(clean);
+      if(parsed && !Array.isArray(parsed) && (parsed.mode === 'movies' || parsed.mode === 'both')){
+        setMode(parsed.mode);
+      }
+      callback(null, clean.length);
+    }catch(e){
+      callback(e);
+    }
+  };
+  reader.onerror = () => callback(new Error('Could not read that file'));
+  reader.readAsText(file);
+}
+
+/* ===================== completionist badges ===================== */
+function computeCompletionBadges(){
+  if(typeof ROADMAP_TIMELINES === 'undefined') return [];
+  const completedTitles = new Set(
+    loadItems()
+      .filter(i => i.status === 'completed')
+      .map(i => (i.title || '').trim().toLowerCase())
+  );
+  const badges = [];
+  Object.entries(ROADMAP_TIMELINES).forEach(([key, timeline]) => {
+    const list = (timeline && timeline.items) || [];
+    if(!list.length) return;
+    const allDone = list.every(it => completedTitles.has((it.title || '').trim().toLowerCase()));
+    if(allDone){
+      badges.push({key, label: timeline.label, color: timeline.color});
+    }
+  });
+  return badges;
 }
 
 /* ===================== quick-add from roadmap page ===================== */
@@ -105,6 +190,41 @@ function quickAddFromRoadmap(title, year, type, universe){
     notes: `Added from the universe (${universe})`
   });
   showToast(`Added "${title}" to your tracker`);
+
+  if(typeof renderRoadmap === 'function'){
+    renderRoadmap();
+  }
+}
+
+/* ===================== cross-reference roadmap data by title ===================== */
+function findRoadmapItemByTitle(title){
+  if(typeof ROADMAP_DATA === 'undefined') return null;
+  const target = (title || '').trim().toLowerCase();
+  for(const key in ROADMAP_DATA){
+    const arr = ROADMAP_DATA[key];
+    if(!Array.isArray(arr)) continue;
+    const found = arr.find(it => (it.title || '').trim().toLowerCase() === target);
+    if(found) return found;
+  }
+  return null;
+}
+
+function openRoadmapDetailsByTitle(title){
+  const item = findRoadmapItemByTitle(title);
+  if(!item){
+    showToast(`Couldn't find details for "${title}"`);
+    return;
+  }
+  openRoadmapDetails(
+    item.title,
+    item.year || '',
+    item.type || 'movie',
+    item.universe || '',
+    !!item.hero,
+    !!item.optional,
+    item.description || '',
+    item.mustWatchBefore || []
+  );
 }
 
 let roadmapSelectedItem = null;
@@ -213,11 +333,16 @@ if(mustWatchBefore && mustWatchBefore.length){
   mustWatchSection.style.display = 'block';
 
   mustWatchList.innerHTML = mustWatchBefore
-    .map(item => `
-      <span class="must-watch-item">
+    .map(item => {
+      const safeItem = (item || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return `
+      <span class="must-watch-item" role="button" tabindex="0"
+        onclick="openRoadmapDetailsByTitle('${safeItem}')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openRoadmapDetailsByTitle('${safeItem}');}">
         ${item}
       </span>
-    `)
+    `;
+    })
     .join('');
 
 } else {
@@ -310,6 +435,37 @@ function navigateWithTransition(url){
     window.location.href = url;
   }, 300);
 }
+/* ===================== clipboard helper ===================== */
+function copyToClipboard(text){
+  if(!text) return;
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text)
+      .then(() => showToast('URL copied to clipboard'))
+      .catch(() => fallbackCopyToClipboard(text));
+  } else {
+    fallbackCopyToClipboard(text);
+  }
+}
+
+function fallbackCopyToClipboard(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  ta.style.pointerEvents = 'none';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try{
+    document.execCommand('copy');
+    showToast('URL copied to clipboard');
+  }catch(e){
+    showToast('Could not copy — copy it manually');
+  }
+  document.body.removeChild(ta);
+}
+
 function showToast(msg){
   let toast = document.querySelector('.toast');
   if(!toast){
