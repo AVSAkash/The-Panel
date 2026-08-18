@@ -345,6 +345,16 @@ textarea {
   margin-top:6px;
 }
 
+.hero-strip-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:14px;
+}
+.hero-strip-row .mode-toggle{margin-top:18px;}
+.hero-strip-row .toolbar-actions{margin-top:18px;}
+
 .mode-toggle{
   display:inline-flex;
   border:3px solid var(--ink);
@@ -463,6 +473,27 @@ textarea {
 .card .progress{font-family:var(--font-mono); font-size:12px;}
 .card .stars{font-size:15px; letter-spacing:2px;}
 .card .notes{font-size:13px; color:#333;}
+
+.poster-url-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 8px;
+  background:var(--cream-dim);
+  border:2px solid var(--ink);
+  border-radius:3px;
+}
+.poster-url-text{
+  flex:1;
+  min-width:0;
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:#555;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
 .card-foot{
   display:flex; justify-content:space-between; align-items:center;
   margin-top:auto;
@@ -678,7 +709,62 @@ textarea {
 .node-optional{
   fill:#8a8a8a;
   font-style:italic;
-}/* ---------- ROADMAP DETAIL MODAL ---------- */
+}
+
+/* ---------- progress badges (tracker status on map nodes) ---------- */
+.progress-badge{
+  filter:drop-shadow(1px 1px 0 rgba(0,0,0,0.25));
+}
+.progress-badge-check{
+  font-family:var(--font-mono);
+  font-size:9px;
+  font-weight:700;
+  fill:var(--cream);
+  text-anchor:middle;
+}
+
+/* ---------- search/jump highlight pulse ---------- */
+.map-node-highlight .node-circle,
+.map-node-highlight rect.node-label-bg{
+  animation:node-pulse 0.5s ease-in-out 3;
+  transform-box:fill-box;
+  transform-origin:center;
+}
+@keyframes node-pulse{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.35);}
+}
+.map-node-highlight rect.node-label-bg{
+  animation-name:label-pulse;
+}
+@keyframes label-pulse{
+  0%,100%{fill:var(--cream); fill-opacity:0.88;}
+  50%{fill:var(--yellow); fill-opacity:1;}
+}
+@media (prefers-reduced-motion: reduce){
+  .map-node-highlight .node-circle,
+  .map-node-highlight rect.node-label-bg{animation:none;}
+}
+
+/* ---------- map search / jump bar ---------- */
+.map-search{
+  display:flex;
+  gap:8px;
+  margin-top:14px;
+  padding-top:14px;
+  border-top:2px dashed var(--ink);
+}
+.map-search input{
+  flex:1;
+  min-width:160px;
+  font-family:var(--font-mono);
+  font-size:13px;
+  padding:9px 12px;
+  border:2px solid var(--ink);
+  border-radius:3px;
+  background:var(--cream);
+}
+/* ---------- ROADMAP DETAIL MODAL ---------- */
 
 .roadmap-modal{
   position:fixed;
@@ -1286,6 +1372,15 @@ details.saga summary::marker{
   background:var(--cream-dim);
   border:2px solid var(--ink);
   box-shadow:2px 2px 0 var(--ink);
+  cursor:pointer;
+  transition:transform .08s ease, background .12s ease;
+}
+.must-watch-item:hover,
+.must-watch-item:focus-visible{
+  background:var(--yellow);
+  transform:translate(-1px,-1px);
+  box-shadow:3px 3px 0 var(--ink);
+  outline:none;
 }
 
 /* ===================== SPOILER WARNING ===================== */
@@ -1813,4 +1908,349 @@ body.page-transition-in {
   body.page-transition-in {
     animation: none;
   }
+}
+/* =========================================================
+   NEW FEATURES — sort/backup toolbar, badges, share modal,
+   marathon page, "you are here" marker
+   ========================================================= */
+
+.toolbar-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.sort-select{
+  font-family:var(--font-mono);
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  padding:9px 10px;
+  border:2px solid var(--ink);
+  border-radius:3px;
+  background:var(--cream);
+}
+
+/* ---------- badges ---------- */
+.badges-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:0 0 22px;
+}
+.badge-stamp{
+  font-family:var(--font-mono);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  padding:9px 13px;
+  border:3px solid var(--ink);
+  border-radius:3px;
+  background:var(--yellow);
+  box-shadow:4px 4px 0 var(--ink);
+  transform:rotate(-1deg);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.badge-stamp:nth-child(even){transform:rotate(1deg);}
+.badge-stamp .trophy{font-size:14px;}
+.badges-empty-hint{
+  font-family:var(--font-mono);
+  font-size:12px;
+  color:#555;
+  margin:0 0 22px;
+}
+
+/* ---------- generic modal ---------- */
+.modal-overlay{
+  position:fixed; inset:0;
+  background:rgba(27,27,27,.78);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:250;
+  padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal-box{
+  background:var(--cream);
+  border:var(--border);
+  box-shadow:9px 9px 0 var(--ink);
+  max-width:460px;
+  width:100%;
+  padding:26px;
+  position:relative;
+  max-height:90vh;
+  overflow-y:auto;
+}
+.modal-box h3{font-family:var(--font-display); font-size:24px; margin-bottom:6px;}
+.modal-box p.sub{font-family:var(--font-mono); font-size:12px; color:#555; margin-bottom:14px;}
+.modal-close{
+  position:absolute; top:10px; right:10px;
+  background:var(--ink); color:var(--cream);
+  border:none; width:30px; height:30px;
+  font-size:18px; line-height:1; cursor:pointer;
+  border-radius:3px;
+}
+.modal-actions{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;}
+
+.share-canvas-wrap{
+  border:var(--border);
+  margin:6px 0 4px;
+  overflow:hidden;
+  background:var(--cream-dim);
+}
+.share-canvas-wrap canvas{width:100%; display:block;}
+
+/* ---------- marathon: the ultimate combined marathon ---------- */
+.marathon-special{
+  padding:30px 32px;
+  margin:22px 0 0;
+  position:relative;
+  background:
+    radial-gradient(circle at 8% 15%, rgba(242,184,7,.35), transparent 45%),
+    linear-gradient(135deg, var(--ink) 0%, #2a2a2a 100%);
+  color:var(--cream);
+  border:4px solid var(--ink);
+  box-shadow:9px 9px 0 var(--red);
+  overflow:hidden;
+}
+.marathon-special::before{
+  content:"★ ULTIMATE";
+  position:absolute;
+  top:14px; right:-38px;
+  transform:rotate(45deg);
+  background:var(--red);
+  color:var(--cream);
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:1px;
+  padding:5px 46px;
+  box-shadow:0 2px 0 rgba(0,0,0,.4);
+}
+.marathon-special h3{
+  font-family:var(--font-display);
+  font-size:clamp(26px,4vw,36px);
+  color:var(--yellow);
+  margin-bottom:8px;
+}
+.marathon-special p{
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--cream-dim);
+  max-width:640px;
+  margin-bottom:14px;
+}
+.marathon-special .journey-count{
+  font-family:var(--font-mono);
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  color:var(--yellow);
+  margin-bottom:16px;
+}
+.segment-picker{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  margin:4px 0 18px;
+}
+.segment-picker-label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  color:#777;
+  margin-right:2px;
+}
+.journey-section-special .segment-picker-label{color:var(--cream-dim);}
+.segment-btn{
+  font-family:var(--font-mono);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  padding:7px 12px;
+  border:2px solid var(--ink);
+  border-radius:20px;
+  background:var(--cream);
+  color:var(--ink);
+  cursor:pointer;
+}
+.journey-section-special .segment-btn{
+  border-color:var(--cream-dim);
+  background:transparent;
+  color:var(--cream-dim);
+}
+.segment-btn.active{
+  background:var(--yellow);
+  border-color:var(--yellow);
+  color:var(--ink);
+  font-weight:700;
+}
+.marathon-special .btn{
+  background:var(--red);
+  color:var(--cream);
+}
+.marathon-special.selected{
+  box-shadow:9px 9px 0 var(--doom-green);
+}
+.marathon-special.selected .btn{
+  background:var(--doom-green);
+}
+
+/* ---------- marathon: journey picker ---------- */
+.journey-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(220px,1fr));
+  gap:18px;
+  margin:22px 0 40px;
+}
+.journey-card{
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.journey-card .journey-swatch{
+  width:34px; height:10px; border-radius:2px; border:2px solid var(--ink);
+}
+.journey-card h4{font-family:var(--font-display); font-size:20px;}
+.journey-card .journey-count{
+  font-family:var(--font-mono); font-size:11px; color:#555; text-transform:uppercase;
+}
+.journey-card.selected{background:var(--yellow);}
+
+/* ---------- marathon: active journey ---------- */
+.journey-section{
+  margin:0 0 40px;
+}
+.journey-section-special{
+  padding:26px;
+  background:
+    radial-gradient(circle at 90% 8%, rgba(242,184,7,.25), transparent 45%),
+    linear-gradient(135deg, var(--ink) 0%, #2a2a2a 100%);
+  border:4px solid var(--ink);
+  box-shadow:9px 9px 0 var(--red);
+  color:var(--cream);
+}
+.journey-section-special .journey-section-head h3{color:var(--yellow);}
+.journey-section-special .journey-progress-label{color:var(--cream-dim);}
+.journey-section-special .journey-progress-track{
+  background:rgba(255,255,255,.15);
+  border-color:var(--cream-dim);
+}
+.journey-section-special .btn-ghost{
+  background:var(--cream);
+  color:var(--ink);
+}
+.journey-section-special > .saga.panel{
+  color:var(--ink);
+}
+.journey-section-head{
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  margin-bottom:14px;
+}
+.journey-section-head h3{font-family:var(--font-display); font-size:26px;}
+.journey-progress-track{
+  width:100%; height:16px;
+  border:2px solid var(--ink); border-radius:3px;
+  background:var(--cream-dim);
+  overflow:hidden;
+  margin:8px 0 4px;
+}
+.journey-progress-fill{
+  height:100%;
+  background:var(--blue);
+}
+.journey-progress-label{
+  font-family:var(--font-mono); font-size:11px; color:#555;
+}
+
+.journey-complete-banner{
+  padding:16px 20px;
+  background:var(--doom-green);
+  color:var(--cream);
+  border:var(--border);
+  box-shadow:6px 6px 0 var(--ink);
+  font-family:var(--font-display);
+  font-size:20px;
+  margin:14px 0;
+}
+.journey-complete-banner.with-prompt{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+}
+.journey-complete-banner.with-prompt span{flex-shrink:0;}
+.journey-complete-banner.with-prompt .btn{
+  font-family:var(--font-mono);
+  font-size:12px;
+  text-transform:none;
+}
+/* Fix text inside Ultimate Marathon Up Next cards */
+.journey-section-special .up-next-card{
+  color:var(--ink);
+}
+
+.journey-section-special .up-next-card h4{
+  color:var(--ink);
+}
+.up-next-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(240px,1fr));
+  gap:16px;
+  margin-bottom:18px;
+}
+.up-next-card{
+  padding:18px;
+  border-left:6px solid var(--blue);
+}
+.up-next-card.side-quest{
+  border-left:6px solid var(--yellow);
+}
+.up-next-card .kicker{
+  font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:#555;
+}
+.up-next-card h4{font-family:var(--font-display); font-size:22px; margin:4px 0 6px;}
+.up-next-card p{font-size:13px; color:#333; margin-bottom:12px;}
+.up-next-card .btn-row{display:flex; gap:8px; flex-wrap:wrap;}
+
+.journey-list{
+  display:flex; flex-direction:column; gap:8px;
+}
+.journey-row{
+  display:flex; align-items:center; gap:12px;
+  padding:10px 14px;
+  border:2px solid var(--ink);
+  border-radius:3px;
+  background:var(--cream);
+  font-family:var(--font-mono);
+  font-size:13px;
+}
+.journey-row .jr-icon{width:22px; text-align:center; flex-shrink:0;}
+.journey-row .jr-title{flex-grow:1;}
+.journey-row .jr-year{color:#777; font-size:11px;}
+.journey-row.completed{background:var(--cream-dim); color:#666; text-decoration:line-through;}
+.journey-row.current{background:var(--yellow); font-weight:600;}
+.journey-row.side-quest{border-style:dashed;}
+.journey-row .jr-tag{
+  font-size:10px; text-transform:uppercase; padding:2px 6px;
+  border:1px solid var(--ink); border-radius:2px; background:var(--cream);
+}
+
+.roadmap-timeline-btn .badge-complete{
+  margin-left:6px;
+  font-size:10px;
+  background:var(--doom-green);
+  color:var(--cream);
+  padding:1px 5px;
+  border-radius:2px;
+}
+
+@media (max-width:640px){
+  .up-next-row{grid-template-columns:1fr;}
 }
