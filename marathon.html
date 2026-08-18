@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PANEL — Marathon</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <a href="index.html" class="brand">PANEL<span class="dot">.</span></a>
+    <div class="navlinks">
+      <a href="tracker.html"
+        onclick="navigateWithTransition('tracker.html'); return false;">
+        TRACKER
+      </a>
+
+      <a href="roadmap.html"
+        onclick="navigateWithTransition('roadmap.html'); return false;">
+        ROADMAP
+      </a>
+
+      <a href="marathon.html"
+        onclick="navigateWithTransition('marathon.html'); return false;">
+        MARATHON
+      </a>
+    </div>
+    <div class="mini-countdown" id="miniCountdown">Doomsday in ...</div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <section class="hero-strip">
+    <h2>Pick Your Marathon</h2>
+    <p>Choose a journey and PANEL tells you exactly what to watch next — required titles first, optional side quests flagged separately. You can run more than one journey at a time.</p>
+  </section>
+
+  <div class="marathon-special panel" id="marathonSpecialCard"></div>
+
+  <div class="journey-grid" id="journeyGrid"></div>
+
+  <div id="activeJourneys"></div>
+
+</div>
+
+<footer>PANEL — a movies &amp; series ledger. Everything stays in your browser's local storage.</footer>
+
+<script src="roadmap-data.js"></script>
+<script src="script.js"></script>
+<script>
+startMiniCountdown(document.getElementById('miniCountdown'));
+
+function esc(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+/* ---------------- selection persistence ---------------- */
+const MARATHON_KEY = 'panel_marathon_journeys';
+
+function loadMarathonSelection(){
+  try{
+    const raw = localStorage.getItem(MARATHON_KEY);
+    if(!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr.filter(k => k === 'all' || ROADMAP_TIMELINES[k]) : []);
+  }catch(e){
+    return new Set();
+  }
+}
+function saveMarathonSelection(){
+  try{
+    localStorage.setItem(MARATHON_KEY, JSON.stringify([...marathonSelection]));
+  }catch(e){
+    console.error('Could not save journey selection', e);
+  }
+}
+const marathonSelection = loadMarathonSelection();
+
+/* tracks which "complete but has side quests" journeys the user has
+   expanded to see the leftover optional titles */
+const expandedSideQuests = new Set();
+
+/* ---------------- expanded MCU trunk (TRACK_A before Endgame) ---------------- */
+/*
+  The visual roadmap trunk is intentionally condensed (tentpoles only).
+  For marathon purposes we want the full Phase 1–3 lineup — TRACK_A has
+  every movie including the side entries — then rejoin the regular trunk
+  starting at Endgame so Phase 4 onward is unaffected.
+*/
+function buildExpandedMcuItems(){
+  const trackA = ROADMAP_DATA.TRACK_A || [];
+  const trunk = ROADMAP_TIMELINES.mcu.items;
+
+  const endgameIdxA = trackA.findIndex(it => it.title === 'Avengers: Endgame');
+  const preEndgame = endgameIdxA === -1 ? trackA : trackA.slice(0, endgameIdxA);
+
+  const endgameIdxTrunk = trunk.findIndex(it => it.title === 'Avengers: Endgame');
+  const fromEndgame = endgameIdxTrunk === -1 ? trunk : trunk.slice(endgameIdxTrunk);
+
+  return [...preEndgame, ...fromEndgame];
+}
+
+const MCU_EXPANDED_ITEMS = buildExpandedMcuItems();
+
+/* Timelines as used on this page — mirrors ROADMAP_TIMELINES but swaps
+   the MCU entry for the expanded (TRACK_A-backed) version above, since
+   both the individual MCU journey and the Ultimate Marathon should use it. */
+const MARATHON_TIMELINES = {
+  ...ROADMAP_TIMELINES,
+  mcu: {
+    ...ROADMAP_TIMELINES.mcu,
+    items: MCU_EXPANDED_ITEMS
+  }
+};
+
+const ALL_BRANCH_KEYS = Object.keys(MARATHON_TIMELINES);
+
+/* ---------------- which segment the Ultimate Marathon starts from ---------------- */
+/*
+  The Ultimate Marathon always includes every branch — there's no more
+  picking parts in/out before starting. Instead, each item in the merged
+  sequence is tagged with the branch it came from (_segment), and the
+  person can choose which segment to START from (e.g. "X-Men" instead
+  of "MCU"). Everything from that segment's first appearance onward is
+  included, in the same merged order as always.
+*/
+const START_SEGMENT_KEY = 'panel_marathon_start_segment';
+
+function loadStartSegment(){
+  try{
+    const raw = localStorage.getItem(START_SEGMENT_KEY);
+    return (raw && ALL_BRANCH_KEYS.includes(raw)) ? raw : 'mcu';
+  }catch(e){
+    return 'mcu';
+  }
+}
+function saveStartSegment(){
+  try{
+    localStorage.setItem(START_SEGMENT_KEY, marathonStartSegment);
+  }catch(e){
+    console.error('Could not save marathon start segment', e);
+  }
+}
+let marathonStartSegment = loadStartSegment();
+
+/* ---------------- the "complete everything" combined journey ---------------- */
+/*
+  Not a plain concatenation of every branch — the crossover movies get
+  their prerequisite branches slotted in right before them, so the
+  marathon actually plays out in the order the movies expect:
+    - Raimi trilogy + Amazing Spider-Man + the first two Venom movies,
+      right before "No Way Home"
+    - Fox's X-Men saga + the original two Fox Fantastic Four movies,
+      right before "Deadpool & Wolverine"
+  Everything else (the Netflix corner, Venom: The Last Dance, the 2015
+  Fantastic Four reboot) is tacked on at the end since nothing in the
+  trunk depends on it. Every item is tagged with which branch it came
+  from (_segment) so a chosen starting point can be located afterward.
+*/
+function tagSegment(items, seg){
+  return items.map(it => ({...it, _segment: seg}));
+}
+
+function buildCompleteMarathonItems(){
+  const trunk = tagSegment(MARATHON_TIMELINES.mcu.items, 'mcu');
+  const raimi = tagSegment(MARATHON_TIMELINES.raimi.items, 'raimi');
+  const amazing = tagSegment(MARATHON_TIMELINES.amazing.items, 'amazing');
+  const xmen = tagSegment(MARATHON_TIMELINES.xmen.items, 'xmen');
+  const four = tagSegment(MARATHON_TIMELINES.four.items, 'four');
+  const venom = tagSegment(MARATHON_TIMELINES.venom.items, 'venom');
+  const series = tagSegment(MARATHON_TIMELINES.series.items, 'series');
+
+  const spiderBlock = [...raimi, ...amazing, ...venom.slice(0, 2)];
+  const mutantBlock = [...xmen, ...four.slice(0, 2)];
+  const leftovers = [...series, ...venom.slice(2), ...four.slice(2)];
+
+  /* Only these titles may move to the front when their branch is selected.
+     Later branch entries stay at their canonical crossover position. */
+  const startFrontTitles = new Set([
+    ...raimi.map(item => item.title),
+    ...amazing.map(item => item.title),
+    ...xmen.map(item => item.title),
+    ...series.map(item => item.title),
+    ...venom.slice(0, 2).map(item => item.title),
+    ...four.slice(0, 2).map(item => item.title)
+  ]);
+
+  const ordered = [];
+  trunk.forEach(item => {
+    if(item.title === 'Spider-Man: No Way Home') ordered.push(...spiderBlock);
+    if(item.title === 'Deadpool & Wolverine') ordered.push(...mutantBlock);
+    ordered.push(item);
+  });
+
+  const complete = [...ordered, ...leftovers];
+
+  return complete.map(item => ({
+    ...item,
+    _startFromFront: startFrontTitles.has(item.title)
+  }));
+}
+
+function getTimelineByKey(key){
+
+  /* Normal individual journeys stay exactly as they are */
+  if(key !== 'all'){
+    return MARATHON_TIMELINES[key];
+  }
+
+
+  /* =========================================================
+     COMPLETE MARVEL MARATHON
+     
+     The selected branch decides where the user STARTS.
+
+     BUT:
+     We still keep the complete crossover order afterwards.
+
+     Example:
+
+     Start X-Men
+       ↓
+     X-Men branch
+       ↓
+     MCU main line
+       ↓
+     Spider-Man / Amazing Spider-Man / Venom
+       ↓
+     No Way Home
+       ↓
+     MCU
+       ↓
+     X-Men/Fantastic Four crossover requirements
+       ↓
+     Deadpool & Wolverine
+       ↓
+     remaining MCU / branches
+  ========================================================= */
+
+  const full = buildCompleteMarathonItems();
+
+  const selectedSegment = marathonStartSegment;
+
+
+  /* If MCU is selected, just use the normal complete order */
+  if(selectedSegment === 'mcu'){
+    return {
+      label: 'Complete Marvel Marathon',
+      color: 'var(--red)',
+      items: full
+    };
+  }
+
+
+  /*
+     Get every title belonging to the selected branch.
+
+     These will be moved to the FRONT of the marathon,
+     because that is where the user chose to begin.
+  */
+/* =========================================================
+   START-SEGMENT ORDERING
+   =========================================================
+
+   The selected timeline does NOT simply get dumped at the
+   beginning in whatever order roadmap-data.js happens to use.
+
+   Instead, we define the correct starting sequence for each
+   branch and then allow the complete marathon dependency
+   order to continue normally.
+*/
+
+/* =========================================================
+   BUILD THE MARATHON FROM THE SELECTED START
+   ========================================================= */
+
+const selectedBranch = full.filter(item =>
+    item._segment === selectedSegment && item._startFromFront
+  );
+
+  const selectedTitles = new Set(
+    selectedBranch.map(item => (item.title || '').trim().toLowerCase())
+  );
+
+  const remaining = full.filter(item =>
+    !selectedTitles.has((item.title || '').trim().toLowerCase())
+  );
+
+  const finalItems = [];
+  const seenTitles = new Set();
+
+  function addUnique(item){
+    const key = (item.title || '').trim().toLowerCase();
+    if(!key || seenTitles.has(key)) return;
+    seenTitles.add(key);
+    finalItems.push(item);
+  }
+
+  /* Selected branch prefix first; everything else keeps canonical order. */
+  selectedBranch.forEach(addUnique);
+  remaining.forEach(addUnique);
+
+
+  return {
+    label: 'Complete Marvel Marathon',
+    color: 'var(--red)',
+    items: finalItems
+  };
+}
+
+/* ---------------- journey progress logic ---------------- */
+function getJourneyStatus(list, statusByTitle){
+  let completedCount = 0;
+  let requiredTotal = 0;
+  let requiredDone = 0;
+  let nextRequired = null;
+  let nextRequiredIdx = list.length;
+
+  list.forEach((it, idx) => {
+    const status = statusByTitle[(it.title || '').trim().toLowerCase()];
+    const done = status === 'completed';
+    if(done) completedCount++;
+    if(!it.optional){
+      requiredTotal++;
+      if(done) requiredDone++;
+    }
+    if(!done && !it.optional && nextRequired === null){
+      nextRequired = it;
+      nextRequiredIdx = idx;
+    }
+  });
+
+  // A side quest only becomes a suggestion once the marathon has actually
+  // reached its spot in the sequence — i.e. it sits before the next
+  // required title still to be watched, not just anywhere later on.
+  let nextSideQuest = null;
+  for(let idx = 0; idx < nextRequiredIdx; idx++){
+    const it = list[idx];
+    if(!it.optional) continue;
+    const status = statusByTitle[(it.title || '').trim().toLowerCase()];
+    if(status !== 'completed'){
+      nextSideQuest = it;
+      break;
+    }
+  }
+
+  const optionalRemaining = list.filter(it =>
+    it.optional && statusByTitle[(it.title || '').trim().toLowerCase()] !== 'completed'
+  );
+
+  return {
+    completedCount,
+    nextRequired,
+    nextSideQuest,
+    requiredComplete: requiredTotal > 0 && requiredDone === requiredTotal,
+    optionalRemaining,
+    complete: list.length > 0 && completedCount === list.length
+  };
+}
+
+function findJourneyItem(key, title){
+  const timeline = getTimelineByKey(key);
+  const list = (timeline && timeline.items) || [];
+  return list.find(it => it.title === title);
+}
+
+function markMarathonWatched(item, key){
+  const items = loadItems();
+  const existing = items.find(i => i.title.trim().toLowerCase() === item.title.trim().toLowerCase());
+  if(existing){
+    updateItem(existing.id, {status: 'completed'});
+  } else {
+    const timeline = getTimelineByKey(key);
+    addItem({
+      title: item.title,
+      year: item.year || '',
+      type: item.type || 'movie',
+      genre: 'MCU',
+      status: 'completed',
+      poster: '',
+      season: '',
+      episode: '',
+      rating: 0,
+      notes: `Marathon: ${item.universe || (timeline && timeline.label) || ''}`
+    });
+  }
+  showToast(`Marked "${item.title}" watched`);
+  renderSpecialCard();
+  renderJourneyPicker();
+  renderActiveJourneys();
+}
+
+/* ---------------- rendering ---------------- */
+function renderSpecialCard(){
+  const card = document.getElementById('marathonSpecialCard');
+  const selected = marathonSelection.has('all');
+  const allTimeline = getTimelineByKey('all');
+  const items = loadItems();
+  const done = allTimeline.items.filter(it =>
+    items.some(i => i.status === 'completed' && i.title.trim().toLowerCase() === (it.title || '').trim().toLowerCase())
+  ).length;
+
+  card.classList.toggle('selected', selected);
+  card.innerHTML = `
+    <h3>🌌 Complete Marvel Marathon</h3>
+    <p>Every movie and series on this roadmap, woven into one sequence — MCU, both Spider-Man timelines, Fox's X-Men and Fantastic Four, the Netflix corner, and Venom. Once you start, you can pick which segment to begin watching from.</p>
+    <div class="journey-count">${allTimeline.items.length} titles in your path &middot; ${done} watched</div>
+    <button class="btn ${selected ? 'btn-red' : ''}" type="button" data-toggle-journey="all">
+      ${selected ? 'Leave Marathon' : 'Start the Ultimate Marathon'}
+    </button>
+  `;
+}
+
+function renderJourneyPicker(){
+  const grid = document.getElementById('journeyGrid');
+  grid.innerHTML = Object.entries(MARATHON_TIMELINES).map(([key, timeline]) => {
+    const selected = marathonSelection.has(key);
+    const list = timeline.items || [];
+    const done = list.filter(it => {
+      const items = loadItems();
+      return items.some(i => i.status === 'completed' && i.title.trim().toLowerCase() === (it.title || '').trim().toLowerCase());
+    }).length;
+    return `
+      <div class="panel journey-card ${selected ? 'selected' : ''}">
+        <div class="journey-swatch" style="background:${timeline.color}"></div>
+        <h4>${esc(timeline.label)}</h4>
+        <div class="journey-count">${list.length} titles &middot; ${done} watched</div>
+        <button class="btn btn-sm ${selected ? 'btn-red' : ''}" type="button" data-toggle-journey="${key}">
+          ${selected ? 'Leave Journey' : 'Start Journey'}
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function buildJourneyListHtml(list, statusByTitle, nextRequiredTitle, nextSideQuestTitle){
+  return list.map(it => {
+    const status = statusByTitle[(it.title || '').trim().toLowerCase()];
+    const done = status === 'completed';
+    const isCurrent = !done && it.title === nextRequiredTitle;
+    const isSideQuest = !done && it.optional && it.title === nextSideQuestTitle;
+
+    let cls = 'journey-row';
+    let icon = '○';
+    let tag = '';
+
+    if(done){
+      cls += ' completed';
+      icon = '✓';
+    } else if(isCurrent){
+      cls += ' current';
+      icon = '▶';
+      tag = '<span class="jr-tag">UP NEXT</span>';
+    } else if(it.optional){
+      cls += ' side-quest';
+      icon = '★';
+      tag = isSideQuest ? '<span class="jr-tag">SIDE QUEST</span>' : '<span class="jr-tag">OPTIONAL</span>';
+    }
+
+    return `
+      <div class="${cls}">
+        <span class="jr-icon">${icon}</span>
+        <span class="jr-title">${esc(it.title)}</span>
+        <span class="jr-year">${esc(it.year || '')}</span>
+        ${tag}
+      </div>
+    `;
+  }).join('');
+}
+
+function upNextCardHtml(key, item, isSideQuest){
+  const payload = `${key}::${item.title}`;
+  const displayTitle = (item.title && item.title.trim()) ? esc(item.title) : 'Untitled';
+  return `
+    <div class="up-next-card panel ${isSideQuest ? 'side-quest' : ''}">
+      <div class="kicker">${isSideQuest ? 'Side Quest · Optional' : 'Up Next'}</div>
+      <h4>${displayTitle}</h4>
+      <p>${esc(item.year || '')} ${item.type === 'series' ? '· Series' : '· Movie'}${isSideQuest ? ' — skippable, you won\u2019t lose the thread without it.' : ''}</p>
+      <div class="btn-row">
+        <button class="btn btn-sm" type="button" data-watched="${esc(payload)}">✓ Mark Watched</button>
+        <button class="btn btn-sm btn-ghost" type="button" data-addwant="${esc(payload)}">+ Add to Tracker</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderActiveJourneys(){
+  const container = document.getElementById('activeJourneys');
+  const keys = [...marathonSelection];
+
+  if(!keys.length){
+    container.innerHTML = `
+      <p style="font-family:var(--font-mono); font-size:13px; color:#555; margin:10px 0 60px;">
+        Pick a journey above to start tracking your marathon.
+      </p>
+    `;
+    return;
+  }
+
+  const items = loadItems();
+  const statusByTitle = {};
+  items.forEach(i => { statusByTitle[i.title.trim().toLowerCase()] = i.status; });
+
+  // the ultimate combined marathon always runs at the top of the list
+  const orderedKeys = keys.slice().sort((a, b) => (a === 'all' ? -1 : b === 'all' ? 1 : 0));
+
+  container.innerHTML = orderedKeys.map(key => {
+    const timeline = getTimelineByKey(key);
+    if(!timeline) return '';
+    const isSpecial = key === 'all';
+    const list = timeline.items || [];
+    const st = getJourneyStatus(list, statusByTitle);
+    const pct = list.length ? Math.round((st.completedCount / list.length) * 100) : 0;
+
+    const segmentPickerHtml = isSpecial ? `
+      <div class="segment-picker">
+        <span class="segment-picker-label">Start from:</span>
+        ${ALL_BRANCH_KEYS.map(k => `
+          <button type="button" class="segment-btn ${marathonStartSegment === k ? 'active' : ''}" data-set-start-segment="${k}">${esc(MARATHON_TIMELINES[k].label)}</button>
+        `).join('')}
+      </div>
+    ` : '';
+
+    let upNextHtml;
+    if(st.requiredComplete){
+      if(st.complete){
+        upNextHtml = `<div class="journey-complete-banner">🏆 ${esc(timeline.label)}: Complete</div>`;
+      } else {
+        const expanded = expandedSideQuests.has(key);
+        const n = st.optionalRemaining.length;
+        upNextHtml = `
+          <div class="journey-complete-banner with-prompt">
+            <span>🏆 ${esc(timeline.label)}: Complete</span>
+            <button class="btn btn-sm btn-ghost" type="button" data-toggle-sidequests="${key}">
+              ${expanded ? 'Hide Side Quests' : `Wanna finish the ${n} side quest${n === 1 ? '' : 's'}?`}
+            </button>
+          </div>
+          ${expanded ? `<div class="up-next-row">${st.optionalRemaining.map(it => upNextCardHtml(key, it, true)).join('')}</div>` : ''}
+        `;
+      }
+    } else {
+      const cards = [];
+      if(st.nextRequired) cards.push(upNextCardHtml(key, st.nextRequired, false));
+      if(st.nextSideQuest) cards.push(upNextCardHtml(key, st.nextSideQuest, true));
+      upNextHtml = `<div class="up-next-row">${cards.join('')}</div>`;
+    }
+
+    return `
+      <section class="journey-section${isSpecial ? ' journey-section-special' : ''}">
+        <div class="journey-section-head">
+          <h3>${isSpecial ? '🌌 ' : ''}${esc(timeline.label)}</h3>
+          <button class="btn btn-sm btn-ghost" type="button" data-toggle-journey="${key}">${isSpecial ? 'Leave Ultimate Marathon' : 'Leave Journey'}</button>
+        </div>
+        <div class="journey-progress-track">
+          <div class="journey-progress-fill" style="width:${pct}%; background:${timeline.color};"></div>
+        </div>
+        <div class="journey-progress-label">${st.completedCount} / ${list.length} watched (${pct}%)</div>
+        ${segmentPickerHtml}
+        ${upNextHtml}
+
+        <details class="saga panel" style="margin-top:16px;">
+          <summary>Full ${esc(timeline.label)} list</summary>
+          <div class="journey-list" style="margin-top:14px;">
+            ${buildJourneyListHtml(list, statusByTitle, st.nextRequired && st.nextRequired.title, st.nextSideQuest && st.nextSideQuest.title)}
+          </div>
+        </details>
+      </section>
+    `;
+  }).join('');
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener('click', (e) => {
+  const setSegBtn = e.target.closest('[data-set-start-segment]');
+  if(setSegBtn){
+    marathonStartSegment = setSegBtn.dataset.setStartSegment;
+    saveStartSegment();
+    renderSpecialCard();
+    renderActiveJourneys();
+    return;
+  }
+
+  const toggleBtn = e.target.closest('[data-toggle-journey]');
+  if(toggleBtn){
+    const key = toggleBtn.dataset.toggleJourney;
+    if(marathonSelection.has(key)) marathonSelection.delete(key);
+    else marathonSelection.add(key);
+    saveMarathonSelection();
+    renderSpecialCard();
+    renderJourneyPicker();
+    renderActiveJourneys();
+    return;
+  }
+
+  const toggleSQBtn = e.target.closest('[data-toggle-sidequests]');
+  if(toggleSQBtn){
+    const key = toggleSQBtn.dataset.toggleSidequests;
+    if(expandedSideQuests.has(key)) expandedSideQuests.delete(key);
+    else expandedSideQuests.add(key);
+    renderActiveJourneys();
+    return;
+  }
+
+  const watchedBtn = e.target.closest('[data-watched]');
+  if(watchedBtn){
+    const [key, title] = watchedBtn.dataset.watched.split('::');
+    const item = findJourneyItem(key, title);
+    if(item) markMarathonWatched(item, key);
+    return;
+  }
+
+  const addWantBtn = e.target.closest('[data-addwant]');
+  if(addWantBtn){
+    const [key, title] = addWantBtn.dataset.addwant.split('::');
+    const item = findJourneyItem(key, title);
+    if(item){
+      quickAddFromRoadmap(item.title, item.year, item.type, item.universe);
+      renderActiveJourneys();
+    }
+    return;
+  }
+});
+
+/* ---------------- init ---------------- */
+renderSpecialCard();
+renderJourneyPicker();
+renderActiveJourneys();
+
+document.body.classList.add('page-transition-in');
+setTimeout(() => {
+  document.body.classList.remove('page-transition-in');
+}, 350);
+</script>
+</body>
+</html>
