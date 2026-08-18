@@ -21,6 +21,11 @@
           onclick="navigateWithTransition('roadmap.html'); return false;">
           ROADMAP
         </a>
+
+        <a href="marathon.html"
+          onclick="navigateWithTransition('marathon.html'); return false;">
+          MARATHON
+        </a>
     </div>
     <div class="mini-countdown" id="miniCountdown">Doomsday in ...</div>
   </div>
@@ -32,11 +37,21 @@
     <h2>Your Watch Ledger</h2>
     <p>Every title you're tracking, stored right in this browser — no account, no server.</p>
 
-    <div class="mode-toggle" role="group" aria-label="Tracking mode">
-      <button id="modeMovies" type="button">Movies Only</button>
-      <button id="modeBoth" type="button">Movies + Series</button>
+    <div class="hero-strip-row">
+      <div class="mode-toggle" role="group" aria-label="Tracking mode">
+        <button id="modeMovies" type="button">Movies Only</button>
+        <button id="modeBoth" type="button">Movies + Series</button>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn btn-ghost btn-sm" id="shareProgressBtn" type="button">📤 Share Progress</button>
+        <button class="btn btn-ghost btn-sm" id="backupBtn" type="button">⬇ Backup (Export JSON)</button>
+        <button class="btn btn-ghost btn-sm" id="importBtn" type="button">⬆ Import Backup</button>
+        <input type="file" id="importFileInput" accept="application/json" style="display:none;">
+      </div>
     </div>
   </section>
+
+  <section class="badges-row" id="badgesRow"></section>
 
   <section class="stats-row" id="statsRow"></section>
 
@@ -48,7 +63,16 @@
       <button data-filter="completed">Completed</button>
       <button data-filter="dropped">Dropped</button>
     </div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <div class="toolbar-actions">
+      <select class="sort-select" id="sortSelect">
+        <option value="dateAdded_desc">Sort: Newest Added</option>
+        <option value="dateAdded_asc">Sort: Oldest Added</option>
+        <option value="alpha_asc">Sort: A → Z</option>
+        <option value="alpha_desc">Sort: Z → A</option>
+        <option value="rating_desc">Sort: Rating (High → Low)</option>
+        <option value="year_desc">Sort: Year (New → Old)</option>
+        <option value="year_asc">Sort: Year (Old → New)</option>
+      </select>
       <input type="text" class="search-box" id="searchBox" placeholder="Search your list...">
       <button class="btn" id="toggleFormBtn" type="button">+ New Entry</button>
     </div>
@@ -121,11 +145,40 @@
 
 <footer>PANEL — a movies &amp; series ledger. Everything stays in your browser's local storage.</footer>
 
+<div class="modal-overlay" id="shareModalOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="shareModalClose" type="button" aria-label="Close">×</button>
+    <h3>Share Your Progress</h3>
+    <p class="sub">A downloadable card summarizing your watch progress.</p>
+    <div class="share-canvas-wrap">
+      <canvas id="shareCanvas" width="1080" height="1350"></canvas>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="downloadShareBtn" type="button">Download Image</button>
+      <button class="btn btn-ghost" id="closeShareBtn" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="importModalOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="importModalClose" type="button" aria-label="Close">×</button>
+    <h3>Import Backup</h3>
+    <p class="sub" id="importModalText">This will replace everything currently in your tracker with the contents of the selected file. This can't be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-red" id="confirmImportBtn" type="button">Replace My List</button>
+      <button class="btn btn-ghost" id="cancelImportBtn" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="roadmap-data.js"></script>
 <script src="script.js"></script>
 <script>
 /* ---------------- state ---------------- */
 let currentFilter = 'all';
 let currentSearch = '';
+let currentSort = 'dateAdded_desc';
 let editingId = null;
 
 const modeMoviesBtn = document.getElementById('modeMovies');
@@ -228,6 +281,40 @@ document.getElementById('searchBox').addEventListener('input', (e) => {
   renderGrid();
 });
 
+document.getElementById('sortSelect').addEventListener('change', (e) => {
+  currentSort = e.target.value;
+  renderGrid();
+});
+
+function sortItems(items){
+  const sorted = items.slice();
+  switch(currentSort){
+    case 'dateAdded_asc':
+      sorted.sort((a,b) => (a.dateAdded || 0) - (b.dateAdded || 0));
+      break;
+    case 'alpha_asc':
+      sorted.sort((a,b) => a.title.localeCompare(b.title));
+      break;
+    case 'alpha_desc':
+      sorted.sort((a,b) => b.title.localeCompare(a.title));
+      break;
+    case 'rating_desc':
+      sorted.sort((a,b) => (b.rating || 0) - (a.rating || 0));
+      break;
+    case 'year_desc':
+      sorted.sort((a,b) => (parseInt(b.year,10) || 0) - (parseInt(a.year,10) || 0));
+      break;
+    case 'year_asc':
+      sorted.sort((a,b) => (parseInt(a.year,10) || 0) - (parseInt(b.year,10) || 0));
+      break;
+    case 'dateAdded_desc':
+    default:
+      sorted.sort((a,b) => (b.dateAdded || 0) - (a.dateAdded || 0));
+      break;
+  }
+  return sorted;
+}
+
 /* ---------------- rendering ---------------- */
 const STATUS_LABEL = {want:'Want to Watch', watching:'Watching', completed:'Completed', dropped:'Dropped'};
 
@@ -266,6 +353,8 @@ function renderGrid(){
     items = items.filter(i => i.title.toLowerCase().includes(currentSearch));
   }
 
+  items = sortItems(items);
+
   if(items.length === 0){
     grid.innerHTML = `
       <div class="empty-state panel" style="grid-column:1/-1;">
@@ -280,6 +369,11 @@ function renderGrid(){
     const stars = item.rating > 0 ? '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating) : '';
     const progress = (item.type === 'series' && (item.season || item.episode))
       ? `<div class="progress">S${item.season || '–'} · E${item.episode || '–'}</div>` : '';
+    const posterRow = item.poster ? `
+        <div class="poster-url-row">
+          <span class="poster-url-text" title="${esc(item.poster)}">${esc(item.poster)}</span>
+          <button class="btn btn-sm" type="button" data-copy-url="${esc(item.poster)}">Copy</button>
+        </div>` : '';
     return `
       <div class="card panel ${tilt}">
         <div class="type-tag">${item.type === 'series' ? 'Series' : 'Movie'} &middot; ${esc(item.genre)}${item.year ? ` &middot; ${esc(item.year)}` : ''}</div>
@@ -287,6 +381,7 @@ function renderGrid(){
         ${progress}
         ${stars ? `<div class="stars">${stars}</div>` : ''}
         ${item.notes ? `<div class="notes">${esc(item.notes)}</div>` : ''}
+        ${posterRow}
         <div class="card-foot">
           <span class="stamp ${item.status}">${STATUS_LABEL[item.status]}</span>
           <div class="card-actions">
@@ -301,6 +396,7 @@ function renderGrid(){
 document.getElementById('cardGrid').addEventListener('click', (e) => {
   const editBtn = e.target.closest('button[data-edit]');
   const delBtn = e.target.closest('button[data-del]');
+  const copyBtn = e.target.closest('button[data-copy-url]');
   if(editBtn){
     const id = editBtn.dataset.edit;
     const item = loadItems().find(i => i.id === id);
@@ -326,12 +422,216 @@ document.getElementById('cardGrid').addEventListener('click', (e) => {
       showToast('Entry removed');
     }
   }
+  if(copyBtn){
+    copyToClipboard(copyBtn.dataset.copyUrl);
+  }
 });
+
+function renderBadges(){
+  const row = document.getElementById('badgesRow');
+  const badges = computeCompletionBadges();
+  if(!badges.length){
+    row.innerHTML = '';
+    return;
+  }
+  row.innerHTML = badges.map(b => `
+    <div class="badge-stamp"><span class="trophy">🏆</span>${esc(b.label)}: Complete</div>
+  `).join('');
+}
 
 function renderAll(){
   renderStats();
   renderGrid();
+  renderBadges();
 }
+
+/* ---------------- backup / import ---------------- */
+document.getElementById('backupBtn').addEventListener('click', exportBackup);
+
+const importFileInput = document.getElementById('importFileInput');
+const importModalOverlay = document.getElementById('importModalOverlay');
+let pendingImportFile = null;
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  importFileInput.value = '';
+  importFileInput.click();
+});
+
+importFileInput.addEventListener('change', () => {
+  const file = importFileInput.files && importFileInput.files[0];
+  if(!file) return;
+  pendingImportFile = file;
+  importModalOverlay.classList.add('open');
+});
+
+function closeImportModal(){
+  importModalOverlay.classList.remove('open');
+  pendingImportFile = null;
+}
+document.getElementById('importModalClose').addEventListener('click', closeImportModal);
+document.getElementById('cancelImportBtn').addEventListener('click', closeImportModal);
+
+document.getElementById('confirmImportBtn').addEventListener('click', () => {
+  if(!pendingImportFile) return;
+  importBackupFile(pendingImportFile, (err, count) => {
+    if(err){
+      showToast('Import failed — ' + err.message);
+    }else{
+      showToast(`Imported ${count} title${count === 1 ? '' : 's'}`);
+      applyMode();
+      renderAll();
+    }
+    closeImportModal();
+  });
+});
+
+/* ---------------- share progress image ---------------- */
+const shareModalOverlay = document.getElementById('shareModalOverlay');
+const shareCanvas = document.getElementById('shareCanvas');
+
+function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight){
+  const words = String(text).split(' ');
+  let line = '';
+  let lines = 0;
+  for(let i = 0; i < words.length; i++){
+    const test = line + words[i] + ' ';
+    if(ctx.measureText(test).width > maxWidth && line !== ''){
+      ctx.fillText(line, x, y + lines * lineHeight);
+      line = words[i] + ' ';
+      lines++;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line, x, y + lines * lineHeight);
+  return lines + 1;
+}
+
+function drawShareCanvas(){
+  const ctx = shareCanvas.getContext('2d');
+  const W = shareCanvas.width, H = shareCanvas.height;
+
+  const items = loadItems();
+  const counts = {want:0, watching:0, completed:0, dropped:0};
+  items.forEach(i => { if(counts[i.status] !== undefined) counts[i.status]++; });
+  const total = items.length;
+  const pct = total ? Math.round((counts.completed / total) * 100) : 0;
+
+  const genreCounts = {};
+  items.forEach(i => {
+    const g = (i.genre || '').trim();
+    if(!g || g === 'Uncategorized') return;
+    genreCounts[g] = (genreCounts[g] || 0) + 1;
+  });
+  const topGenre = Object.entries(genreCounts).sort((a,b) => b[1]-a[1])[0];
+
+  const badges = computeCompletionBadges();
+  const cd = getCountdownParts();
+
+  /* background */
+  ctx.fillStyle = '#F2EDE1';
+  ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = '#1B1B1B';
+  ctx.lineWidth = 14;
+  ctx.strokeRect(7,7,W-14,H-14);
+
+  /* header */
+  ctx.fillStyle = '#1B1B1B';
+  ctx.font = '700 64px sans-serif';
+  ctx.fillText('PANEL', 60, 130);
+  ctx.fillStyle = '#D6362D';
+  ctx.font = '700 64px sans-serif';
+  ctx.fillText('.', 300, 130);
+
+  ctx.fillStyle = '#2B4C7E';
+  ctx.font = '600 26px monospace';
+  ctx.fillText('MY WATCH PROGRESS', 60, 175);
+
+  /* big completion number */
+  ctx.fillStyle = '#D6362D';
+  ctx.font = '700 220px sans-serif';
+  ctx.fillText(pct + '%', 60, 420);
+  ctx.fillStyle = '#1B1B1B';
+  ctx.font = '600 24px monospace';
+  ctx.fillText('OF TRACKED TITLES COMPLETED', 64, 465);
+
+  /* stat blocks */
+  const stats = [
+    ['TOTAL TRACKED', total],
+    ['COMPLETED', counts.completed],
+    ['WATCHING', counts.watching],
+    ['WANT TO WATCH', counts.want]
+  ];
+  const boxW = (W - 120 - 3*20) / 4;
+  stats.forEach((s, i) => {
+    const bx = 60 + i * (boxW + 20);
+    const by = 520;
+    ctx.strokeStyle = '#1B1B1B';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(bx, by, boxW, 130);
+    ctx.fillStyle = '#1B1B1B';
+    ctx.font = '700 48px sans-serif';
+    ctx.fillText(String(s[1]), bx + 16, by + 70);
+    ctx.font = '600 13px monospace';
+    wrapCanvasText(ctx, s[0], bx + 16, by + 105, boxW - 30, 16);
+  });
+
+  /* top genre */
+  let cursorY = 720;
+  if(topGenre){
+    ctx.fillStyle = '#1B1B1B';
+    ctx.font = '600 22px monospace';
+    ctx.fillText(`FAVORITE GENRE: ${topGenre[0].toUpperCase()}`, 60, cursorY);
+    cursorY += 50;
+  }
+
+  /* badges */
+  ctx.font = '700 26px sans-serif';
+  ctx.fillText('ACHIEVEMENTS', 60, cursorY);
+  cursorY += 20;
+  if(badges.length){
+    badges.forEach(b => {
+      cursorY += 55;
+      ctx.fillStyle = '#F2B807';
+      ctx.strokeStyle = '#1B1B1B';
+      ctx.lineWidth = 3;
+      const label = `🏆 ${b.label}: Complete`;
+      ctx.font = '600 22px monospace';
+      const w = ctx.measureText(label).width + 40;
+      ctx.fillRect(60, cursorY - 32, w, 44);
+      ctx.strokeRect(60, cursorY - 32, w, 44);
+      ctx.fillStyle = '#1B1B1B';
+      ctx.fillText(label, 80, cursorY - 3);
+    });
+  }else{
+    cursorY += 40;
+    ctx.fillStyle = '#555';
+    ctx.font = 'italic 20px monospace';
+    ctx.fillText('None yet — keep watching!', 60, cursorY);
+  }
+
+  /* footer / countdown */
+  ctx.fillStyle = '#1B1B1B';
+  ctx.font = '600 20px monospace';
+  ctx.fillText(`AVENGERS: DOOMSDAY IN ${cd.days} DAYS`, 60, H - 90);
+  ctx.fillStyle = '#555';
+  ctx.font = '13px monospace';
+  ctx.fillText(new Date().toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}), 60, H - 55);
+}
+
+document.getElementById('shareProgressBtn').addEventListener('click', () => {
+  drawShareCanvas();
+  shareModalOverlay.classList.add('open');
+});
+document.getElementById('shareModalClose').addEventListener('click', () => shareModalOverlay.classList.remove('open'));
+document.getElementById('closeShareBtn').addEventListener('click', () => shareModalOverlay.classList.remove('open'));
+
+document.getElementById('downloadShareBtn').addEventListener('click', () => {
+  const link = document.createElement('a');
+  link.download = `panel-progress-${new Date().toISOString().slice(0,10)}.png`;
+  link.href = shareCanvas.toDataURL('image/png');
+  link.click();
+});
 
 startMiniCountdown(document.getElementById('miniCountdown'));
 applyMode();
