@@ -5,6 +5,14 @@
 
    You can add, remove, or edit titles here without touching
    the roadmap rendering code.
+
+   `title` should always be the full, official title. If it's
+   long, add a `lines` array (2 entries) to wrap it across two
+   lines on the map — line 0 renders on top, line 1 below.
+   `mustWatchBefore` entries must exactly match another item's
+   `title` somewhere in this file (the app looks titles up by
+   exact string match), so keep them in sync when you rename
+   anything.
    ========================================================= */
 
 const ROADMAP_DATA = {
@@ -212,7 +220,7 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Guardians Vol. 2',
+      title: 'Guardians of the Galaxy Vol. 2',
       year: '2017',
       phase: '3',
       universe: 'Earth-616',
@@ -283,7 +291,7 @@ const ROADMAP_DATA = {
   'Captain America: Civil War',
   'Thor: Ragnarok',
   'Guardians of the Galaxy',
-  'Guardians Vol. 2',
+  'Guardians of the Galaxy Vol. 2',
   'Black Panther',
   'Doctor Strange'
 ]
@@ -378,8 +386,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Avengers : Age of Ultron',
-      lines: ['Avengers :', 'Age of Ultron'],
+      title: 'Avengers: Age of Ultron',
+      lines: ['Avengers:', 'Age of Ultron'],
       year: '2015',
       universe: 'Earth-616',
       type: 'movie',
@@ -393,7 +401,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Civil War',
+      title: 'Captain America: Civil War',
+      lines: ['Captain America:', 'Civil War'],
       year: '2016',
       universe: 'Earth-616',
       type: 'movie',
@@ -407,7 +416,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Avengers : Infinity War',
+      title: 'Avengers: Infinity War',
+      lines: ['Avengers:', 'Infinity War'],
       year: '2018',
       universe: 'Earth-616',
       type: 'movie',
@@ -419,14 +429,14 @@ const ROADMAP_DATA = {
   'Captain America: Civil War',
   'Thor: Ragnarok',
   'Guardians of the Galaxy',
-  'Guardians Vol. 2',
+  'Guardians of the Galaxy Vol. 2',
   'Black Panther',
   'Doctor Strange'
 ]
     },
 
     {
-      title: 'Avengers : Endgame',
+      title: 'Avengers: Endgame',
       year: '2019',
       universe: 'Earth-616',
       type: 'movie',
@@ -440,7 +450,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Far From Home',
+      title: 'Spider-Man: Far From Home',
+      lines: ['Spider-Man:', 'Far From Home'],
       year: '2019',
       universe: 'Earth-616',
       type: 'movie',
@@ -465,7 +476,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Falcon & Winter Soldier',
+      title: 'The Falcon and the Winter Soldier',
+      lines: ['The Falcon and', 'the Winter Soldier'],
       year: '2021',
       universe: 'Earth-616',
       type: 'series',
@@ -477,7 +489,7 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Loki S1',
+      title: 'Loki (Season 1)',
       year: '2021',
       universe: 'Earth-616',
       type: 'series',
@@ -501,26 +513,29 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'What If...? S1,S2',
+      title: 'What If...? (Seasons 1–2)',
+      lines: ['What If...?', '(Seasons 1–2)'],
       year: '2021',
       universe: 'Earth-616',
       type: 'series',
+      optional: true,
       description:
         'Alternate realities explore how different choices can create radically different versions of familiar Marvel stories.',
         mustWatchBefore: [
-  'Loki S1'
+  'Loki (Season 1)'
 ]
     },
 
     {
-      title: 'Shang-Chi',
+      title: 'Shang-Chi and the Legend of the Ten Rings',
+      lines: ['Shang-Chi and the', 'Legend of the Ten Rings'],
       year: '2021',
       universe: 'Earth-616',
       type: 'movie',
       description:
         'Shang-Chi is pulled back into his family’s dangerous legacy and discovers a hidden world beyond his ordinary life.',
         mustWatchBefore: [
-  'Loki S1'
+  'Loki (Season 1)'
 ]
     },
 
@@ -549,7 +564,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'No Way Home',
+      title: 'Spider-Man: No Way Home',
+      lines: ['Spider-Man:', 'No Way Home'],
       year: '2021',
       universe: 'Earth-616',
       type: 'movie',
@@ -572,11 +588,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Doctor Strange : Multiverse of Madness',
-      lines: [
-        'Doctor Strange :',
-        'Multiverse of Madness'
-      ],
+      title: 'Doctor Strange in the Multiverse of Madness',
+      lines: ['Doctor Strange in the', 'Multiverse of Madness'],
       year: '2022',
       universe: 'Earth-616',
       type: 'movie',
@@ -602,7 +615,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Love and Thunder',
+      title: 'Thor: Love and Thunder',
+      lines: ['Thor:', 'Love and Thunder'],
       year: '2022',
       universe: 'Earth-616',
       type: 'movie',
@@ -614,10 +628,12 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'She-Hulk',
+      title: 'She-Hulk: Attorney at Law',
+      lines: ['She-Hulk:', 'Attorney at Law'],
       year: '2022',
       universe: 'Earth-616',
       type: 'series',
+      optional: true,
       description:
         'Jennifer Walters balances her legal career with life as a super-powered Hulk.',
         mustWatchBefore: [
@@ -626,7 +642,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Wakanda Forever',
+      title: 'Black Panther: Wakanda Forever',
+      lines: ['Black Panther:', 'Wakanda Forever'],
       year: '2022',
       universe: 'Earth-616',
       type: 'movie',
@@ -639,7 +656,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Ant-Man : Quantumania',
+      title: 'Ant-Man and the Wasp: Quantumania',
+      lines: ['Ant-Man and the Wasp:', 'Quantumania'],
       year: '2023',
       universe: 'Earth-616',
       type: 'movie',
@@ -648,19 +666,20 @@ const ROADMAP_DATA = {
         mustWatchBefore: [
   'Ant-Man and the Wasp',
   'Avengers: Endgame',
-  'Loki S1'
+  'Loki (Season 1)'
 ]
     },
 
     {
-      title: 'Guardians Vol. 3',
+      title: 'Guardians of the Galaxy Vol. 3',
+      lines: ['Guardians of the Galaxy', 'Vol. 3'],
       year: '2023',
       universe: 'Earth-616',
       type: 'movie',
       description:
         'The Guardians race to save Rocket while confronting the painful origins of their friend.',
         mustWatchBefore: [
-  'Guardians Vol. 2',
+  'Guardians of the Galaxy Vol. 2',
   'Avengers: Infinity War',
   'Avengers: Endgame'
 ]
@@ -671,6 +690,7 @@ const ROADMAP_DATA = {
       year: '2023',
       universe: 'Earth-616',
       type: 'series',
+      optional: true,
       description:
         'Nick Fury returns to Earth as the Skrulls secretly infiltrate positions of power.',
         mustWatchBefore: [
@@ -680,14 +700,14 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Loki S2',
+      title: 'Loki (Season 2)',
       year: '2023',
       universe: 'Earth-616',
       type: 'series',
       description:
         'Loki races through time to save the TVA and the branching timelines from collapse.',
         mustWatchBefore: [
-  'Loki S1'
+  'Loki (Season 1)'
 ]
     },
 
@@ -720,6 +740,7 @@ const ROADMAP_DATA = {
 
     {
       title: 'Deadpool & Wolverine',
+      lines: ['Deadpool &', 'Wolverine'],
       year: '2024',
       universe: 'Earth-616',
       type: 'movie',
@@ -729,8 +750,8 @@ const ROADMAP_DATA = {
   'Deadpool',
   'Deadpool 2',
   'Logan',
-  'Loki S1',
-  'Loki S2'
+  'Loki (Season 1)',
+  'Loki (Season 2)'
 ]
     },
 
@@ -748,43 +769,44 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'What If...? S3',
+      title: 'What If...? (Season 3)',
+      lines: ['What If...?', '(Season 3)'],
       year: '2024',
       universe: 'Earth-616',
       type: 'series',
+      optional: true,
       description:
         'More alternate realities reveal unexpected versions of familiar Marvel heroes and events.',
         mustWatchBefore: [
-  'What If...? S1,S2'
+  'What If...? (Seasons 1–2)'
 ]
     },
 
     {
       title: 'Daredevil: Born Again',
+      lines: ['Daredevil:', 'Born Again'],
       year: '2025',
       universe: 'Earth-616',
       type: 'series',
       description:
         'Matt Murdock returns to Hell’s Kitchen as Daredevil while Wilson Fisk builds a new political power base.',
         mustWatchBefore: [
-  'Daredevil S1',
-  'Daredevil S2',
-  'Daredevil S3'
+  'Daredevil (Season 1)',
+  'Daredevil (Season 2)',
+  'Daredevil (Season 3)'
 ]
     },
 
     {
       title: 'Captain America: Brave New World',
-       lines: [
-        'Captain America:',
-        'Brave New World'
-      ],
+      lines: ['Captain America:', 'Brave New World'],
       year: '2025',
       universe: 'Earth-616',
       type: 'movie',
       description:
-        'Sam Wilson faces an international crisis after fully stepping into the role of Captain America.',mustWatchBefore: [
-  'The Falcon & Winter Soldier',
+        'Sam Wilson faces an international crisis after fully stepping into the role of Captain America.',
+      mustWatchBefore: [
+  'The Falcon and the Winter Soldier',
   'Captain America: Civil War',
   'Avengers: Endgame'
 ]
@@ -799,7 +821,7 @@ const ROADMAP_DATA = {
         'A group of unconventional heroes and antiheroes are brought together for a dangerous mission.',
         mustWatchBefore: [
   'Black Widow',
-  'Falcon & Winter Soldier'
+  'The Falcon and the Winter Soldier'
 ]
     },
 
@@ -807,18 +829,19 @@ const ROADMAP_DATA = {
       title: 'Ironheart',
       year: '2025',
       universe: 'Earth-616',
-      type: 'series',
+      type: 'series',      
       optional: true,
       description:
         'Riri Williams returns with her genius and technology as she discovers that magic can be as dangerous as science.',
         mustWatchBefore: [
   'Black Panther',
-  'Wakanda Forever'
+  'Black Panther: Wakanda Forever'
 ]
     },
 
     {
-      title: 'Fantastic Four',
+      title: 'The Fantastic Four: First Steps',
+      lines: ['The Fantastic Four:', 'First Steps'],
       year: '2025',
       universe: 'Earth-616',
       type: 'movie',
@@ -832,13 +855,15 @@ const ROADMAP_DATA = {
       year: '2025',
       universe: 'Earth-616',
       type: 'series',
+      optional: true,
       description:
         'Simon Williams enters Hollywood as his ambitions collide with a very different kind of superhero story.',
         mustWatchBefore: []
     },
 
     {
-      title: 'Brand New Day',
+      title: 'Spider-Man: Brand New Day',
+      lines: ['Spider-Man:', 'Brand New Day'],
       year: '2026',
       universe: 'Earth-616',
       type: 'movie',
@@ -854,7 +879,7 @@ const ROADMAP_DATA = {
     {
       title: 'Avengers: Doomsday',
       lines: [
-        'Avengers :',
+        'Avengers:',
         'Doomsday'
       ],
       year: '2026',
@@ -862,25 +887,30 @@ const ROADMAP_DATA = {
       type: 'movie',
       hero: true,
       description:
-        'Heroes from multiple universes are pulled toward a catastrophic collision that threatens to reshape the Marvel multiverse.',mustWatchBefore: [
+        'Heroes from multiple universes are pulled toward a catastrophic collision that threatens to reshape the Marvel multiverse.',
+      mustWatchBefore: [
   'Avengers: Endgame',
-  'Loki S1',
-  'Loki S2',
+  'Loki (Season 1)',
+  'Loki (Season 2)',
   'Spider-Man: No Way Home',
-  'Doctor Strange: Multiverse of Madness',
+  'Doctor Strange in the Multiverse of Madness',
   'Deadpool & Wolverine',
-  'Fantastic Four',
-  'Brand New Day'
+  'The Fantastic Four: First Steps',
+  'Spider-Man: Brand New Day'
 ]
     },
 
     {
-      title: 'Secret Wars',
+      title: 'Avengers: Secret Wars',
+      lines: ['Avengers:', 'Secret Wars'],
       year: "'27 TBD",
       universe: 'Earth-616',
       type: 'movie',
       description:
-        'The surviving heroes face the ultimate multiversal conflict as realities collide.'
+        'The surviving heroes face the ultimate multiversal conflict as realities collide.',
+      mustWatchBefore: [
+  'Avengers: Doomsday'
+]
     }
 
   ],
@@ -937,7 +967,8 @@ const ROADMAP_DATA = {
   AMAZING: [
 
     {
-      title: 'Amazing Spider-Man',
+      title: 'The Amazing Spider-Man',
+      lines: ['The Amazing', 'Spider-Man'],
       year: '2012',
       universe: 'Earth-120703',
       type: 'movie',
@@ -947,14 +978,15 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Amazing Spider-Man 2',
+      title: 'The Amazing Spider-Man 2',
+      lines: ['The Amazing', 'Spider-Man 2'],
       year: '2014',
       universe: 'Earth-120703',
       type: 'movie',
       description:
         'Peter Parker faces Electro and Harry Osborn while the danger surrounding Oscorp grows.',
         mustWatchBefore: [
-  'Amazing Spider-Man'
+  'The Amazing Spider-Man'
 ]
     }
 
@@ -978,7 +1010,7 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'X2',
+      title: 'X2: X-Men United',
       year: '2003',
       universe: 'Earth-10005',
       type: 'movie',
@@ -990,7 +1022,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Xmen : The Last Stand',
+      title: 'X-Men: The Last Stand',
+      lines: ['X-Men:', 'The Last Stand'],
       year: '2006',
       universe: 'Earth-10005',
       type: 'movie',
@@ -998,12 +1031,13 @@ const ROADMAP_DATA = {
         'The mutant community is divided over a controversial cure as Magneto prepares for war.',
         mustWatchBefore: [
   'X-Men',
-  'X2'
+  'X2: X-Men United'
 ]
     },
 
     {
-      title: 'Origins: Wolverine',
+      title: 'X-Men Origins: Wolverine',
+      lines: ['X-Men Origins:', 'Wolverine'],
       year: '2009',
       universe: 'Earth-10005',
       type: 'movie',
@@ -1013,7 +1047,7 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Xmen : First Class',
+      title: 'X-Men: First Class',
       year: '2011',
       universe: 'Earth-10005',
       type: 'movie',
@@ -1035,7 +1069,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Xmen : Days of Future Past',
+      title: 'X-Men: Days of Future Past',
+      lines: ['X-Men:', 'Days of Future Past'],
       year: '2014',
       universe: 'Earth-10005',
       type: 'movie',
@@ -1043,7 +1078,7 @@ const ROADMAP_DATA = {
         'The X-Men send Wolverine into the past to prevent a future where mutants and humans are nearly wiped out.',
         mustWatchBefore: [
   'X-Men',
-  'X2',
+  'X2: X-Men United',
   'X-Men: The Last Stand',
   'X-Men: First Class'
 ]
@@ -1062,7 +1097,7 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Xmen : Apocalypse',
+      title: 'X-Men: Apocalypse',
       year: '2016',
       universe: 'Earth-10005',
       type: 'movie',
@@ -1083,7 +1118,7 @@ const ROADMAP_DATA = {
         'An aging Logan protects a young mutant while confronting the final chapter of his life as Wolverine.',
         mustWatchBefore: [
   'X-Men',
-  'X2',
+  'X2: X-Men United',
   'X-Men: The Last Stand',
   'The Wolverine'
 ]
@@ -1102,7 +1137,7 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Xmen : Dark Phoenix',
+      title: 'Dark Phoenix',
       year: '2019',
       universe: 'Earth-10005',
       type: 'movie',
@@ -1116,7 +1151,7 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'The New Mutents',
+      title: 'The New Mutants',
       year: '2020',
       universe: 'Earth-10005',
       type: 'movie',
@@ -1138,7 +1173,8 @@ const ROADMAP_DATA = {
   DAREDEVIL: [
 
     {
-      title: 'Daredevil S1',
+      title: 'Daredevil (Season 1)',
+      lines: ['Daredevil', '(Season 1)'],
       year: '2015',
       universe: 'Earth-616',
       type: 'series',
@@ -1148,7 +1184,8 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Jessica Jones S1',
+      title: 'Jessica Jones (Season 1)',
+      lines: ['Jessica Jones', '(Season 1)'],
       year: '2015',
       universe: 'Earth-616',
       type: 'series',
@@ -1158,31 +1195,34 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Daredevil S2',
+      title: 'Daredevil (Season 2)',
+      lines: ['Daredevil', '(Season 2)'],
       year: '2016',
       universe: 'Earth-616',
       type: 'series',
       description:
         'Matt Murdock faces the Punisher and the Hand while his personal life begins to unravel.',
         mustWatchBefore: [
-  'Daredevil S1'
+  'Daredevil (Season 1)'
 ]
     },
 
     {
-      title: 'Luke Cage S1',
+      title: 'Luke Cage (Season 1)',
+      lines: ['Luke Cage', '(Season 1)'],
       year: '2016',
       universe: 'Earth-616',
       type: 'series',
       description:
         'Luke Cage becomes a reluctant hero in Harlem while confronting criminals tied to his past.',
         mustWatchBefore: [
-            'Jessica Jones S1'
+            'Jessica Jones (Season 1)'
         ]
     },
 
     {
-      title: 'Iron Fist S1',
+      title: 'Iron Fist (Season 1)',
+      lines: ['Iron Fist', '(Season 1)'],
       year: '2017',
       universe: 'Earth-616',
       type: 'series',
@@ -1199,27 +1239,29 @@ const ROADMAP_DATA = {
       description:
         'Daredevil, Jessica Jones, Luke Cage and Iron Fist unite when the Hand threatens New York.',
         mustWatchBefore: [
-  'Daredevil S2',
-  'Jessica Jones S1',
-  'Luke Cage S1',
-  'Iron Fist S1'
+  'Daredevil (Season 2)',
+  'Jessica Jones (Season 1)',
+  'Luke Cage (Season 1)',
+  'Iron Fist (Season 1)'
 ]
     },
 
     {
-      title: 'The Punisher S1',
+      title: 'The Punisher (Season 1)',
+      lines: ['The Punisher', '(Season 1)'],
       year: '2017',
       universe: 'Earth-616',
       type: 'series',
       description:
         'Frank Castle wages a brutal war against the conspiracy responsible for the death of his family.',
         mustWatchBefore: [
-  'Daredevil S2'
+  'Daredevil (Season 2)'
 ]
     },
 
     {
-      title: 'Jessica Jones S2',
+      title: 'Jessica Jones (Season 2)',
+      lines: ['Jessica Jones', '(Season 2)'],
       year: '2018',
       universe: 'Earth-616',
       type: 'series',
@@ -1227,12 +1269,13 @@ const ROADMAP_DATA = {
       description:
         'Jessica investigates the origins of her powers while confronting the people who experimented on her.',
         mustWatchBefore: [
-  'Jessica Jones S1'
+  'Jessica Jones (Season 1)'
 ]
     },
 
     {
-      title: 'Luke Cage S2',
+      title: 'Luke Cage (Season 2)',
+      lines: ['Luke Cage', '(Season 2)'],
       year: '2018',
       universe: 'Earth-616',
       type: 'series',
@@ -1240,13 +1283,14 @@ const ROADMAP_DATA = {
       description:
         'Luke Cage struggles with his growing reputation as Harlem’s protector while new rivals challenge him.',
         mustWatchBefore: [
-  'Luke Cage S1',
+  'Luke Cage (Season 1)',
   'The Defenders'
 ]
     },
 
     {
-      title: 'Iron Fist S2',
+      title: 'Iron Fist (Season 2)',
+      lines: ['Iron Fist', '(Season 2)'],
       year: '2018',
       universe: 'Earth-616',
       type: 'series',
@@ -1254,39 +1298,42 @@ const ROADMAP_DATA = {
       description:
         'Danny Rand tries to protect New York while mastering his responsibilities as the Iron Fist.',
         mustWatchBefore: [
-  'Iron Fist S1',
+  'Iron Fist (Season 1)',
   'The Defenders'
 ]
     },
 
     {
-      title: 'Daredevil S3',
+      title: 'Daredevil (Season 3)',
+      lines: ['Daredevil', '(Season 3)'],
       year: '2018',
       universe: 'Earth-616',
       type: 'series',
       description:
         'After suffering a devastating defeat, Matt Murdock returns to confront Wilson Fisk and reclaim his identity.',
         mustWatchBefore: [
-  'Daredevil S1',
-  'Daredevil S2',
+  'Daredevil (Season 1)',
+  'Daredevil (Season 2)',
   'The Defenders'
 ]
     },
 
     {
-      title: 'The Punisher S2',
+      title: 'The Punisher (Season 2)',
+      lines: ['The Punisher', '(Season 2)'],
       year: '2019',
       universe: 'Earth-616',
       type: 'series',
       description:
         'Frank Castle tries to disappear into a quiet life but is pulled back into violence to protect a young girl.',
         mustWatchBefore: [
-  'The Punisher S1'
+  'The Punisher (Season 1)'
 ]
     },
 
     {
-      title: 'Jessica Jones S3',
+      title: 'Jessica Jones (Season 3)',
+      lines: ['Jessica Jones', '(Season 3)'],
       year: '2019',
       universe: 'Earth-616',
       type: 'series',
@@ -1294,8 +1341,8 @@ const ROADMAP_DATA = {
       description:
         'Jessica investigates a dangerous serial killer while dealing with the consequences of her relationship with Trish.',
         mustWatchBefore: [
-  'Jessica Jones S1',
-  'Jessica Jones S2',
+  'Jessica Jones (Season 1)',
+  'Jessica Jones (Season 2)',
   'The Defenders'
 ]
     }
@@ -1310,7 +1357,8 @@ const ROADMAP_DATA = {
   FANTASTIC_FOUR: [
 
     {
-      title: 'Fantastic Four',
+      title: 'Fantastic Four (2005)',
+      lines: ['Fantastic Four', '(2005)'],
       year: '2005',
       universe: 'Earth-121698',
       type: 'movie',
@@ -1320,10 +1368,10 @@ const ROADMAP_DATA = {
     },
 
     {
-      title: 'Fantastic Four : Rise of the Silver Surfer',
+      title: 'Fantastic Four: Rise of the Silver Surfer',
       lines: [
-        'Rise of the Silver Surfer',
-        'Fantastic Four :'
+        'Fantastic Four:',
+        'Rise of the Silver Surfer'
       ],
       year: '2007',
       universe: 'Earth-121698',
@@ -1331,12 +1379,13 @@ const ROADMAP_DATA = {
       description:
         'The Fantastic Four face the arrival of the Silver Surfer and a cosmic threat that could consume Earth.',
         mustWatchBefore: [
-  'Fantastic Four'
+  'Fantastic Four (2005)'
 ]
     },
 
     {
-      title: 'Fantastic Four (Reboot)',
+      title: 'Fantastic Four (2015)',
+      lines: ['Fantastic Four', '(2015)'],
       year: '2015',
       universe: 'Earth-15866',
       type: 'movie',
@@ -1367,8 +1416,8 @@ const ROADMAP_DATA = {
     {
       title: 'Venom: Let There Be Carnage',
       lines: [
-        'Let There Be Carnage',
-        'Venom:'
+        'Venom:',
+        'Let There Be Carnage'
       ],
       year: '2021',
       universe: 'Earth-688',
@@ -1382,6 +1431,7 @@ const ROADMAP_DATA = {
 
     {
       title: 'Venom: The Last Dance',
+      lines: ['Venom:', 'The Last Dance'],
       year: '2024',
       universe: 'Earth-688',
       type: 'movie',
